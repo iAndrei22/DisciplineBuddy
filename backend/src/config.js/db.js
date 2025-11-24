@@ -1,21 +1,13 @@
-const mysql = require("mysql2");
+const mongoose = require('mongoose');
 
-const db = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME
-});
-
-//Adding a connection check to the server
-db.getConnection((err, connection) => {
-    if (err) {
-        console.error('❌ ERROR: Could not connect to the MySQL/MariaDB database. Check if XAMPP is running and if the data in .env is correct.', err);
-        // Stop the application if it cannot connect to the essential DB.
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGO_URI);
+        console.log('✅ MongoDB Connected');
+    } catch (err) {
+        console.error('❌ Database Error:', err);
         process.exit(1);
     }
-    console.log('✅ Database connection successful (Schema: disciplinebuddy)!');
-    connection.release(); // Release the connection back to the pool
-});
+};
 
-module.exports = db;
+module.exports = connectDB;

@@ -1,60 +1,39 @@
 const bcrypt = require('bcrypt');
-const db = require('../config.js/db'); 
+const User = require('../models/user.model');
 const saltRounds = 10;
 
-// Register Logic (US-AUTH-1)
 const register = async (username, email, password) => {
     try {
         const hashedPassword = await bcrypt.hash(password, saltRounds);
-        const defaultRole = 'User'; 
 
-        const sql = `
-            INSERT INTO Users (username, email, password, role)
-            VALUES (?, ?, ?, ?)
-        `;
-        const values = [username, email, hashedPassword, defaultRole];
+        const user = await User.create({
+            username,
+            email,
+            password: hashedPassword
+        });
 
-        const [result] = await db.promise().execute(sql, values);
-        return result.insertId;
-
+        return user._id;
     } catch (error) {
-        if (error.code === 'ER_DUP_ENTRY') {
+        if (error.code === 11000) { // MongoDB duplicate key error code
             throw new Error("Email or Username already in use.");
         }
-        console.error('Registration error:', error.message);
-        throw new Error("Registration failed due to a server error.");
+        throw error;
     }
 };
 
-// Login Logic (US-AUTH-2)
 const login = async (email, password) => {
-    // 1. Find user by email
-    const [rows] = await db.promise().execute(
-        'SELECT user_id, password, role, username FROM Users WHERE email = ?', 
-        [email]
-    );
+    const user = await User.findOne({ email });
 
-    const user = rows[0];
+    if (!user) throw new Error("Invalid credentials.");
 
-    // Check if user exists
-    if (!user) {
-        throw new Error("Invalid credentials.");
-    }
-
-    // 2. Compare the provided password with the stored hash
     const match = await bcrypt.compare(password, user.password);
+    if (!match) throw new Error("Invalid credentials.");
 
-    if (!match) {
-        throw new Error("Invalid credentials.");
-    }
-
-    // 3. Success: return user data (excluding the password hash)
-    const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    // Return user without password
+    const userObj = user.toObject();
+    delete userObj.password;
+    
+    return userObj;
 };
 
-
-module.exports = {
-    register,
-    login
-};
+module.exports = { register, login };

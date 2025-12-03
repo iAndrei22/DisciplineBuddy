@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config.js/db.js");
 const authService = require("./services/auth.service");
+const taskController = require("./controllers/task.controller");
 require("dotenv").config();
 
 const app = express();
@@ -44,6 +45,8 @@ app.post("/api/login", async (req, res) => {
         res.status(401).json({ message: err.message });
     }
 });
+
+app.use("/api/tasks", taskController);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

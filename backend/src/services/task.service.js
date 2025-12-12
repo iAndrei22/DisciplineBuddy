@@ -47,12 +47,37 @@ const toggleTaskCompletion = async (taskId, isCompleted) => {
         throw new Error("Task ID is required.");
     }
     
-    // Update and return the new version of the document
-    return await Task.findByIdAndUpdate(
-        taskId, 
-        { isCompleted }, 
+    // Find current task to determine score delta
+    const current = await Task.findById(taskId);
+    if (!current) throw new Error("Task not found.");
+
+    // Update completion flag
+    const updated = await Task.findByIdAndUpdate(
+        taskId,
+        { isCompleted },
         { new: true }
     );
+
+    // Gamification: adjust user score based on completion change
+    try {
+        const User = require('../models/user.model');
+        let delta = 0;
+        if (!current.isCompleted && isCompleted) {
+            // Marked as done -> add points
+            delta = current.points || 10;
+        } else if (current.isCompleted && !isCompleted) {
+            // Marked as undone -> remove points
+            delta = -(current.points || 10);
+        }
+        if (delta !== 0) {
+            await User.findByIdAndUpdate(current.userId, { $inc: { score: delta } });
+        }
+    } catch (e) {
+        // Log but don't fail the toggle operation
+        console.error('Score update error:', e.message);
+    }
+
+    return updated;
 };
 
 module.exports = {

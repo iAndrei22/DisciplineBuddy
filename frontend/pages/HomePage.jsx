@@ -1,5 +1,28 @@
+const { useEffect, useState } = React;
+
 const HomePage = () => {
     const user = JSON.parse(localStorage.getItem("user"));
+    const [score, setScore] = useState(0);
+    const [progress, setProgress] = useState({ percent: 0, completed: 0, total: 0 });
+    const [streak, setStreak] = useState(0);
+
+    const loadStats = async () => {
+        try {
+            const sres = await fetch(`${API_URL}/tasks/score/${user._id}`);
+            const sval = await sres.json();
+            if (sres.ok) setScore(sval.score || 0);
+
+            const pres = await fetch(`${API_URL}/tasks/progress/${user._id}`);
+            const pval = await pres.json();
+            if (pres.ok) setProgress({ percent: pval.percent, completed: pval.completed, total: pval.total });
+
+            const stres = await fetch(`${API_URL}/tasks/streak/${user._id}`);
+            const stval = await stres.json();
+            if (stres.ok) setStreak(stval.currentStreak || 0);
+        } catch {}
+    };
+
+    useEffect(() => { if (user) loadStats(); }, []);
 
     if (!user) {
         window.location.hash = "#/login";
@@ -40,6 +63,17 @@ const HomePage = () => {
                     Go to My Tasks
                     <i className="ph-bold ph-arrow-right"></i>
                 </a>
+
+                {/* Progress Bar */}
+                <div className="mt-6">
+                    <div className="flex justify-between text-sm text-brand-100 mb-1">
+                        <span>Today Progress</span>
+                        <span>{progress.percent}% ({progress.completed}/{progress.total})</span>
+                    </div>
+                    <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
+                        <div className="h-3 bg-white rounded-full" style={{ width: `${progress.percent}%` }}></div>
+                    </div>
+                </div>
             </div>
 
             {/* Quick Stats (Static Visuals) */}
@@ -48,13 +82,13 @@ const HomePage = () => {
                     <div className="flex items-center gap-2 text-gray-500 mb-1 text-sm font-medium">
                         <i className="ph-fill ph-fire text-orange-500"></i> Streak
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">Some Days</div>
+                    <div className="text-2xl font-bold text-gray-900">{streak > 0 ? `Day ${streak}` : '0 Days'}</div>
                 </div>
                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                     <div className="flex items-center gap-2 text-gray-500 mb-1 text-sm font-medium">
                         <i className="ph-fill ph-star text-yellow-500"></i> Points
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">Some</div>
+                    <div className="text-2xl font-bold text-gray-900">{score}</div>
                 </div>
             </div>
         </div>

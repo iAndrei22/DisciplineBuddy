@@ -55,9 +55,17 @@ const toggleTaskCompletion = async (taskId, isCompleted) => {
     );
 };
 
+
+// 5. Edit task (update any field)
+const editTask = async (taskId, updateFields) => {
+    if (!taskId) throw new Error("Task ID is required.");
+    return await Task.findByIdAndUpdate(taskId, updateFields, { new: true });
+};
+
 module.exports = {
     createTask,
     getUserTasks,
     deleteTask,
-    toggleTaskCompletion
+    toggleTaskCompletion,
+    editTask
 };

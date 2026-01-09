@@ -4,6 +4,9 @@ const TasksPage = () => {
     const user = JSON.parse(localStorage.getItem("user"));
     const [tasks, setTasks] = useState([]);
     const [taskForm, setTaskForm] = useState({ title: "", description: "", points: 10 });
+    const [editId, setEditId] = useState(null);
+    const [editForm, setEditForm] = useState({ title: "", description: "", points: 10 });
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
     if (!user) {
         window.location.hash = "#/login";
@@ -29,6 +32,27 @@ const TasksPage = () => {
         await apiPatch(`/tasks/${task._id}`, { isCompleted: !task.isCompleted });
         loadTasks();
     };
+
+        const startEdit = (task) => {
+            setEditId(task._id);
+            setEditForm({ title: task.title, description: task.description, points: task.points });
+        };
+
+        const saveEdit = async () => {
+            await fetch(`${API_URL}/tasks/${editId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(editForm)
+            });
+            setEditId(null);
+            loadTasks();
+        };
+
+        const deleteTask = async (taskId) => {
+            await fetch(`${API_URL}/tasks/${taskId}`, { method: "DELETE" });
+            setConfirmDeleteId(null);
+            loadTasks();
+        };
 
     return (
         <div className="max-w-xl mx-auto p-6 fade-in">
@@ -102,16 +126,53 @@ const TasksPage = () => {
                         </button>
 
                         <div className="flex-1">
-                            <h3 className={`font-semibold text-gray-800 ${task.isCompleted ? "line-through text-gray-400" : ""}`}>
-                                {task.title}
-                            </h3>
-                            <p className="text-sm text-gray-500 mt-0.5">{task.description}</p>
+                                {editId === task._id ? (
+                                    <>
+                                        <input 
+                                            className="font-semibold text-gray-800 mb-1 w-full border border-brand-300 bg-brand-50 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-200 transition"
+                                            value={editForm.title}
+                                            onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+                                        />
+                                        <input 
+                                            className="text-sm text-gray-700 mb-1 w-full border border-brand-200 bg-brand-50 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-100 transition"
+                                            value={editForm.description}
+                                            onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                                        />
+                                        <input 
+                                            type="number"
+                                            className="text-xs font-bold mb-1 w-16 border border-brand-200 bg-brand-50 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-100 transition"
+                                            value={editForm.points}
+                                            onChange={e => setEditForm({ ...editForm, points: Number(e.target.value) })}
+                                        />
+                                        <button onClick={saveEdit} className="mr-2 text-xs text-green-600">Save</button>
+                                        <button onClick={() => setEditId(null)} className="text-xs text-gray-400">Cancel</button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3 className={`font-semibold text-gray-800 ${task.isCompleted ? "line-through text-gray-400" : ""}`}>{task.title}</h3>
+                                        <p className="text-sm text-gray-500 mt-0.5">{task.description}</p>
+                                    </>
+                                )}
                         </div>
 
                         <div className="bg-brand-50 text-brand-700 text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1 h-fit">
                             <i className="ph-fill ph-star text-brand-400"></i>
                             +{task.points}
                         </div>
+                            <div className="flex flex-col gap-1 ml-2 relative">
+                                <button onClick={() => startEdit(task)} className="text-xs text-blue-500">Edit</button>
+                                {confirmDeleteId === task._id ? (
+                                    <div className="bg-white border border-gray-200 rounded shadow-sm p-2 mt-1 flex flex-col items-center animate-fade-in text-xs z-10 absolute right-0 top-8 min-w-[180px]">
+                                        <span className="mb-2 text-gray-700">Are you sure you want to delete this task?</span>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => deleteTask(task._id)} className="text-red-600 font-bold">Yes</button>
+                                            <button onClick={() => setConfirmDeleteId(null)} className="text-gray-400">No</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button onClick={() => setConfirmDeleteId(task._id)} className="text-xs text-red-500">Delete</button>
+                                )}
+                            </div>
                     </div>
                 ))}
             </div>

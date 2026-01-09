@@ -62,4 +62,15 @@ router.put("/:taskId", async (req, res) => {
     }
 });
 
+    // Edit task (update any field)
+    router.patch("/:taskId", async (req, res) => {
+        try {
+            const updated = await taskService.editTask(req.params.taskId, req.body);
+            if (!updated) return res.status(404).json({ message: "Task not found" });
+            res.status(200).json(updated);
+        } catch (err) {
+            res.status(400).json({ message: err.message });
+        }
+    });
+
 module.exports = router;

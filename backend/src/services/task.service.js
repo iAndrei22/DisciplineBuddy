@@ -1,4 +1,44 @@
+
 const Task = require('../models/task.model');
+const User = require('../models/user.model');
+const path = require('path');
+const fs = require('fs');
+
+// Load badges config
+const badgesPath = path.join(__dirname, '../badges.json');
+const BADGES = JSON.parse(fs.readFileSync(badgesPath, 'utf8'));
+
+// Helper: Check and assign badges to user
+async function checkAndAssignBadges(userId) {
+    const user = await User.findById(userId);
+    if (!user) return;
+
+    // Get user stats
+    const tasks = await Task.find({ userId });
+    const completedTasks = tasks.filter(t => t.isCompleted);
+    const totalPoints = completedTasks.reduce((sum, t) => sum + (t.points || 0), 0);
+
+    // Early Bird: complete at least one task before 8:00
+    const hasEarlyBird = completedTasks.some(t => {
+        if (!t.updatedAt) return false;
+        const date = new Date(t.updatedAt);
+        return date.getHours() < 8;
+    });
+
+    // Build badge checks
+    const earned = [];
+    BADGES.forEach(badge => {
+        if (user.badges.includes(badge.id)) return;
+        if (badge.type === 'points' && totalPoints >= badge.milestone) earned.push(badge.id);
+        if (badge.type === 'tasks_completed' && completedTasks.length >= badge.milestone) earned.push(badge.id);
+        if (badge.type === 'early_task' && hasEarlyBird) earned.push(badge.id);
+    });
+
+    if (earned.length > 0) {
+        user.badges.push(...earned);
+        await user.save();
+    }
+}
 
 // Service to handle Task logic
 
@@ -42,17 +82,22 @@ const deleteTask = async (taskId) => {
 };
 
 // 4. Update task status (Completed/Not Completed)
+
 const toggleTaskCompletion = async (taskId, isCompleted) => {
     if (!taskId) {
         throw new Error("Task ID is required.");
     }
-    
-    // Update and return the new version of the document
-    return await Task.findByIdAndUpdate(
-        taskId, 
-        { isCompleted }, 
+    // Update task
+    const updatedTask = await Task.findByIdAndUpdate(
+        taskId,
+        { isCompleted },
         { new: true }
     );
+    // If completed, check for badges
+    if (updatedTask && isCompleted) {
+        await checkAndAssignBadges(updatedTask.userId);
+    }
+    return updatedTask;
 };
 
 

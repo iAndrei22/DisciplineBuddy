@@ -14,8 +14,20 @@ app.use(express.json());
 // Connect to MongoDB
 connectDB();
 
+
 // Routes
 app.get("/", (req, res) => res.send("Backend running (MongoDB)"));
+
+// Serve badges.json for frontend
+const path = require("path");
+const fs = require("fs");
+app.get("/api/badges", (req, res) => {
+    const badgesPath = path.join(__dirname, "./badges.json");
+    fs.readFile(badgesPath, "utf8", (err, data) => {
+        if (err) return res.status(500).json({ message: "Could not load badges." });
+        res.json(JSON.parse(data));
+    });
+});
 
 app.post("/api/register", async (req, res) => {
     try {

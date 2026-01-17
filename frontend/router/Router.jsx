@@ -9,6 +9,8 @@ const loadPage = async (path) => {
             return window.HomePage;
         case "#/tasks":
             return window.TasksPage;
+        case "#/profile":
+            return window.ProfilePage;
         default:
             return window.LoginPage;
     }

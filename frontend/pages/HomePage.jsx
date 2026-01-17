@@ -19,13 +19,20 @@ const HomePage = () => {
                         <p className="text-sm text-gray-500">Ready for today?</p>
                     </div>
                 </div>
-                <button 
-                    onClick={() => { localStorage.removeItem("user"); window.location.hash = "#/login"; }}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                    <i className="ph-bold ph-sign-out text-xl"></i>
-                </button>
+                <div>
+                    <button 
+                        onClick={() => { localStorage.removeItem("user"); window.location.hash = "#/login"; }}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                        <i className="ph-bold ph-sign-out text-xl"></i>
+                    </button>
+                </div>
             </header>
+
+            {/* Profile Button */}
+            <a href="#/profile" className="ml-4 px-4 py-2 bg-brand-100 text-brand-600 rounded-xl font-semibold hover:bg-brand-200 transition-colors shadow-soft">
+                <i className="ph-bold ph-user text-lg mr-1"></i> My Profile
+            </a>
 
             {/* Hero Card */}
             <div className="bg-gradient-to-r from-brand-600 to-indigo-600 rounded-3xl p-8 text-white shadow-glow mb-8 relative overflow-hidden">

@@ -162,7 +162,7 @@ const TasksPage = () => {
                             <div className="flex flex-col gap-1 ml-2 relative">
                                 <button onClick={() => startEdit(task)} className="text-xs text-blue-500">Edit</button>
                                 {confirmDeleteId === task._id ? (
-                                    <div className="bg-white border border-gray-200 rounded shadow-sm p-2 mt-1 flex flex-col items-center animate-fade-in text-xs z-10 absolute right-0 top-8 min-w-[180px]">
+                                    <div className="bg-white border border-gray-200 rounded shadow-sm p-2 flex flex-col items-center animate-fade-in text-xs z-30 absolute top-0 right-[-220px] min-w-[200px] shadow-lg">
                                         <span className="mb-2 text-gray-700">Are you sure you want to delete this task?</span>
                                         <div className="flex gap-2">
                                             <button onClick={() => deleteTask(task._id)} className="text-red-600 font-bold">Yes</button>

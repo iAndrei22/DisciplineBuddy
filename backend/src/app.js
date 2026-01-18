@@ -58,6 +58,20 @@ app.post("/api/login", async (req, res) => {
     }
 });
 
+// Get user by ID (to refresh user data including badges)
+app.get("/api/users/:userId", async (req, res) => {
+    try {
+        const User = require("./models/user.model");
+        const user = await User.findById(req.params.userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.status(200).json(user);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 app.use("/api/tasks", taskController);
 
 const PORT = process.env.PORT || 3000;

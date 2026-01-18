@@ -1,12 +1,6 @@
 
 
-// Helper to fetch user data (replace with your actual auth/user context)
 const { useEffect, useState } = React;
-
-const getUser = () => {
-  // Placeholder: replace with real user fetching logic
-  return JSON.parse(localStorage.getItem("user"));
-};
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
@@ -15,24 +9,35 @@ const ProfilePage = () => {
   const [completedTasks, setCompletedTasks] = useState(0);
 
   useEffect(() => {
-    const u = getUser();
-    setUser(u);
-    if (!u) return;
-    // Fetch tasks for user
-    fetch(`http://localhost:3000/api/tasks/${u._id}`)
+    // Get user id from localStorage (only for id, not for display)
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (!storedUser) return;
+
+    // Fetch fresh user data from backend (includes updated badges)
+    fetch(`http://localhost:3000/api/users/${storedUser._id}`)
       .then((res) => res.json())
-      .then((tasks) => {
-        const completed = tasks.filter((t) => t.isCompleted);
-        setCompletedTasks(completed.length);
-        setPoints(completed.reduce((sum, t) => sum + (t.points || 0), 0));
-      });
-    // Fetch badges.json (static)
-    fetch("http://localhost:3000/api/badges")
-      .then((res) => res.json())
-      .then((allBadges) => {
-        setBadges(
-          allBadges.filter((b) => u.badges && u.badges.includes(b.id))
-        );
+      .then((freshUser) => {
+        setUser(freshUser);
+        // Update localStorage with fresh user data
+        localStorage.setItem("user", JSON.stringify(freshUser));
+
+        // Fetch tasks for user
+        fetch(`http://localhost:3000/api/tasks/${freshUser._id}`)
+          .then((res) => res.json())
+          .then((tasks) => {
+            const completed = tasks.filter((t) => t.isCompleted);
+            setCompletedTasks(completed.length);
+            setPoints(completed.reduce((sum, t) => sum + (t.points || 0), 0));
+          });
+
+        // Fetch badges.json (static)
+        fetch("http://localhost:3000/api/badges")
+          .then((res) => res.json())
+          .then((allBadges) => {
+            setBadges(
+              allBadges.filter((b) => freshUser.badges && freshUser.badges.includes(b.id))
+            );
+          });
       });
   }, []);
 

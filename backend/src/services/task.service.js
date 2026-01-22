@@ -1,4 +1,5 @@
 const Task = require('../models/task.model');
+const levelService = require('./level.service');
 
 // Service to handle Task logic
 
@@ -51,10 +52,16 @@ const toggleTaskCompletion = async (taskId, isCompleted) => {
     const current = await Task.findById(taskId);
     if (!current) throw new Error("Task not found.");
 
-    // Update completion flag
+    // Update completion flag and completedAt date
+    const updateData = { isCompleted };
+    if (isCompleted) {
+        updateData.completedAt = new Date();
+    }
+    // Note: if unchecking, completedAt stays but will be updated on next completion
+    
     const updated = await Task.findByIdAndUpdate(
         taskId,
-        { isCompleted },
+        updateData,
         { new: true }
     );
 
@@ -71,6 +78,9 @@ const toggleTaskCompletion = async (taskId, isCompleted) => {
         }
         if (delta !== 0) {
             await User.findByIdAndUpdate(current.userId, { $inc: { score: delta } });
+            
+            // Update user level and XP after score change
+            await levelService.updateUserLevel(current.userId);
         }
     } catch (e) {
         // Log but don't fail the toggle operation

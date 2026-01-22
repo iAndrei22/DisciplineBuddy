@@ -77,7 +77,11 @@ router.get("/progress/:userId", async (req, res) => {
         const end = new Date(target.getFullYear(), target.getMonth(), target.getDate() + 1);
 
         const total = await Task.countDocuments({ userId, createdAt: { $gte: start, $lt: end } });
-        const completed = await Task.countDocuments({ userId, isCompleted: true, createdAt: { $gte: start, $lt: end } });
+        const completed = await Task.countDocuments({ 
+            userId, 
+            isCompleted: true, 
+            completedAt: { $gte: start, $lt: end } 
+        });
 
         const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
         res.status(200).json({ date: start.toISOString().slice(0,10), total, completed, percent });
@@ -104,13 +108,22 @@ router.get("/streak/:userId", async (req, res) => {
         const { userId } = req.params;
 
         // Fetch all completion dates for the user
-        const completedTasks = await Task.find({ userId, isCompleted: true }).select('updatedAt');
+        const completedTasks = await Task.find({ userId, isCompleted: true, completedAt: { $ne: null } }).select('completedAt');
         if (!completedTasks.length) return res.status(200).json({ currentStreak: 0 });
 
-        // Build a set of unique YYYY-MM-DD dates where tasks were completed
+        // Helper to format a local date as YYYY-MM-DD (avoids timezone shifts from toISOString)
+        const formatLocalDateKey = (d) => {
+            const y = d.getFullYear();
+            const m = (d.getMonth() + 1).toString().padStart(2, '0');
+            const day = d.getDate().toString().padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+
+        // Build a set of unique YYYY-MM-DD (local) dates where tasks were completed
         const dateSet = new Set(
-            completedTasks.map(t => new Date(t.updatedAt))
-                .map(d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0,10))
+            completedTasks
+                .map(t => new Date(t.completedAt))
+                .map(d => formatLocalDateKey(new Date(d.getFullYear(), d.getMonth(), d.getDate())))
         );
 
         // Count consecutive days going backwards from today
@@ -119,7 +132,7 @@ router.get("/streak/:userId", async (req, res) => {
         cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
 
         while (true) {
-            const key = cursor.toISOString().slice(0,10);
+            const key = formatLocalDateKey(cursor);
             if (dateSet.has(key)) {
                 streak += 1;
                 // Move to previous day

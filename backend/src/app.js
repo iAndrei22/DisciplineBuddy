@@ -3,6 +3,7 @@ const cors = require("cors");
 const connectDB = require("./config.js/db.js");
 const authService = require("./services/auth.service");
 const taskController = require("./controllers/task.controller");
+const userController = require("./controllers/user.controller");
 require("dotenv").config();
 
 const app = express();
@@ -46,7 +47,6 @@ app.post("/api/login", async (req, res) => {
     }
 });
 
-app.use("/api/tasks", taskController);
-
+app.use("/api/tasks", taskController);app.use("/api/users", userController);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

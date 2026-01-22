@@ -1,6 +1,7 @@
 
 const Task = require('../models/task.model');
 const User = require('../models/user.model');
+const levelService = require('./level.service');
 const path = require('path');
 const fs = require('fs');
 
@@ -87,17 +88,49 @@ const toggleTaskCompletion = async (taskId, isCompleted) => {
     if (!taskId) {
         throw new Error("Task ID is required.");
     }
-    // Update task
-    const updatedTask = await Task.findByIdAndUpdate(
+    
+    // Find current task to determine score delta
+    const current = await Task.findById(taskId);
+    if (!current) throw new Error("Task not found.");
+
+    // Update completion flag and completedAt date
+    const updateData = { isCompleted };
+    if (isCompleted) {
+        updateData.completedAt = new Date();
+    }
+    // Note: if unchecking, completedAt stays but will be updated on next completion
+
+    const updated = await Task.findByIdAndUpdate(
         taskId,
-        { isCompleted },
+        updateData,
         { new: true }
     );
-    // If completed, check for badges
-    if (updatedTask && isCompleted) {
-        await checkAndAssignBadges(updatedTask.userId);
+
+    // Gamification: adjust user score based on completion change
+    try {
+        let delta = 0;
+        if (!current.isCompleted && isCompleted) {
+            // Marked as done -> add points
+            delta = current.points || 10;
+        } else if (current.isCompleted && !isCompleted) {
+            // Marked as undone -> remove points
+            delta = -(current.points || 10);
+        }
+        if (delta !== 0) {
+            await User.findByIdAndUpdate(current.userId, { $inc: { score: delta } });
+            // Update user level and XP after score change
+            await levelService.updateUserLevel(current.userId);
+        }
+    } catch (e) {
+        // Log but don't fail the toggle operation
+        console.error('Score update error:', e.message);
     }
-    return updatedTask;
+
+    // If completed, check for badges
+    if (updated && isCompleted) {
+        await checkAndAssignBadges(updated.userId);
+    }
+    return updated;
 };
 
 
@@ -106,6 +139,8 @@ const editTask = async (taskId, updateFields) => {
     if (!taskId) throw new Error("Task ID is required.");
     return await Task.findByIdAndUpdate(taskId, updateFields, { new: true });
 };
+
+
 
 module.exports = {
     createTask,

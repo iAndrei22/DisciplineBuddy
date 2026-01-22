@@ -3,6 +3,7 @@ const cors = require("cors");
 const connectDB = require("./config.js/db.js");
 const authService = require("./services/auth.service");
 const taskController = require("./controllers/task.controller");
+const userController = require("./controllers/user.controller");
 require("dotenv").config();
 
 const app = express();
@@ -72,7 +73,21 @@ app.get("/api/users/:userId", async (req, res) => {
     }
 });
 
-app.use("/api/tasks", taskController);
+// Get user by ID (to refresh user data including badges)
+app.get("/api/users/:userId", async (req, res) => {
+    try {
+        const User = require("./models/user.model");
+        const user = await User.findById(req.params.userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.status(200).json(user);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
 
+app.use("/api/tasks", taskController);
+app.use("/api/users", userController);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

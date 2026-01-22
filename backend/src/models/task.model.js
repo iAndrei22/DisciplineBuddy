@@ -5,7 +5,8 @@ const taskSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
     points: { type: Number, default: 10 },
-    isCompleted: { type: Boolean, default: false }
+    isCompleted: { type: Boolean, default: false },
+    completedAt: { type: Date, default: null }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Task', taskSchema);

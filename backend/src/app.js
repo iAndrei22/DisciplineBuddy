@@ -3,6 +3,7 @@ const cors = require("cors");
 const connectDB = require("./config.js/db.js");
 const authService = require("./services/auth.service");
 const taskController = require("./controllers/task.controller");
+const challengeRoutes = require("./routes/challenge.routes");
 require("dotenv").config();
 
 const app = express();
@@ -19,13 +20,17 @@ app.get("/", (req, res) => res.send("Backend running (MongoDB)"));
 
 app.post("/api/register", async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        const { username, email, password, role } = req.body;
+        
         if (!username || !email || !password) {
             return res.status(400).json({ message: "Missing fields" });
         }
 
-        const userId = await authService.register(username, email, password);
-        res.status(201).json({ message: "User registered", userId });
+        const userId = await authService.register(username, email, password, role);
+
+        
+         res.status(201).json({ message: "User registered", userId });
+
     } catch (err) {
         const status = err.message.includes("in use") ? 409 : 500;
         res.status(status).json({ message: err.message });
@@ -47,6 +52,8 @@ app.post("/api/login", async (req, res) => {
 });
 
 app.use("/api/tasks", taskController);
+
+app.use("/api/challenges", challengeRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

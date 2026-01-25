@@ -1,8 +1,15 @@
 const HomePage = () => {
     const user = JSON.parse(localStorage.getItem("user"));
 
+
     if (!user) {
         window.location.hash = "#/login";
+        return null;
+    }
+
+    // Redirect coaches to their dashboard
+    if (user.role === "coach") {
+        window.location.hash = "#/coach";
         return null;
     }
 
@@ -36,14 +43,20 @@ const HomePage = () => {
                 <h2 className="text-3xl font-bold mb-2">Focus Mode</h2>
                 <p className="text-brand-100 mb-6 max-w-xs">Stay consistent and track your daily progress to earn points.</p>
                 
-                <a href="#/tasks" className="inline-flex items-center gap-2 bg-white text-brand-600 px-6 py-3 rounded-xl font-bold hover:bg-brand-50 transition-colors shadow-lg">
-                    Go to My Tasks
-                    <i className="ph-bold ph-arrow-right"></i>
-                </a>
+                <div className="flex gap-3">
+                    <a href="#/tasks" className="inline-flex items-center gap-2 bg-white text-brand-600 px-6 py-3 rounded-xl font-bold hover:bg-brand-50 transition-colors shadow-lg">
+                        Go to My Tasks
+                        <i className="ph-bold ph-arrow-right"></i>
+                    </a>
+                    <a href="#/challenges" onClick={(e) => { localStorage.setItem("showEnrolled", "true"); }} className="inline-flex items-center gap-2 bg-white text-brand-600 px-6 py-3 rounded-xl font-bold hover:bg-brand-50 transition-colors shadow-lg">
+                        My Challenges
+                        <i className="ph-bold ph-target"></i>
+                    </a>
+                </div>
             </div>
 
-            {/* Quick Stats (Static Visuals) */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                     <div className="flex items-center gap-2 text-gray-500 mb-1 text-sm font-medium">
                         <i className="ph-fill ph-fire text-orange-500"></i> Streak
@@ -57,6 +70,11 @@ const HomePage = () => {
                     <div className="text-2xl font-bold text-gray-900">Some</div>
                 </div>
             </div>
+
+            {/* Explore Challenges Button */}
+            <a href="#/challenges" className="block w-full bg-gradient-to-r from-indigo-500 to-brand-600 text-white p-4 rounded-2xl text-center font-bold hover:shadow-lg transition-shadow">
+                <i className="ph-bold ph-rocket mr-2"></i> Explore Challenges
+            </a>
         </div>
     );
 };

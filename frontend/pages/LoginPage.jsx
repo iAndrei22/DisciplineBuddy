@@ -2,7 +2,7 @@ const { useState } = React;
 
 const LoginPage = () => {
     const [isLogin, setIsLogin] = useState(true);
-    const [form, setForm] = useState({ username: "", email: "", password: "" });
+    const [form, setForm] = useState({ username: "", password: "", email: "", role: "" });
     const [msg, setMsg] = useState("");
 
     const handleSubmit = async (e) => {
@@ -13,6 +13,7 @@ const LoginPage = () => {
         const body = isLogin 
             ? { email: form.email, password: form.password } 
             : form;
+
 
         try {
             const res = await fetch(API_URL + endpoint, {
@@ -73,14 +74,29 @@ const LoginPage = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {!isLogin && (
-                        <div className="relative">
-                            <i className="ph ph-user absolute left-3 top-3.5 text-gray-400"></i>
-                            <input 
-                                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                                placeholder="Username"
-                                onChange={e => setForm({ ...form, username: e.target.value })}
-                            />
-                        </div>
+                        <>
+                            <div className="relative">
+                                <i className="ph ph-user absolute left-3 top-3.5 text-gray-400"></i>
+                                <input 
+                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                                    placeholder="Username"
+                                    onChange={e => setForm({ ...form, username: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="relative">
+                                <i className="ph ph-briefcase absolute left-3 top-3.5 text-gray-400"></i>
+                                <select 
+                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all appearance-none"
+                                    onChange={e => {
+                                        setForm({ ...form, role: e.target.value });
+                                    }}
+                                >
+                                    <option value="user">Regular User</option>
+                                    <option value="coach">Coach</option>
+                                </select>
+                            </div>
+                        </>
                     )}
 
                     <div className="relative">

@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const taskService = require("../services/task.service");
+const Task = require("../models/task.model");
+const User = require("../models/user.model");
 
 // Create task
 router.post("/", async (req, res) => {
@@ -72,5 +74,89 @@ router.put("/:taskId", async (req, res) => {
             res.status(400).json({ message: err.message });
         }
     });
+
+// Extra routes: progress and score
+
+// Get daily progress percentage
+router.get("/progress/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { date } = req.query; // YYYY-MM-DD optional, defaults to today
+
+        const target = date ? new Date(date) : new Date();
+        const start = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+        const end = new Date(target.getFullYear(), target.getMonth(), target.getDate() + 1);
+
+        const total = await Task.countDocuments({ userId, createdAt: { $gte: start, $lt: end } });
+        const completed = await Task.countDocuments({ 
+            userId, 
+            isCompleted: true, 
+            completedAt: { $gte: start, $lt: end } 
+        });
+
+        const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+        res.status(200).json({ date: start.toISOString().slice(0,10), total, completed, percent });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+});
+
+// Get user total score
+router.get("/score/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const user = await User.findById(userId).select("score");
+        if (!user) return res.status(404).json({ message: "User not found" });
+        res.status(200).json({ score: user.score || 0 });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+});
+
+// Get current streak (consecutive days with at least one completed task)
+router.get("/streak/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Fetch all completion dates for the user
+        const completedTasks = await Task.find({ userId, isCompleted: true, completedAt: { $ne: null } }).select('completedAt');
+        if (!completedTasks.length) return res.status(200).json({ currentStreak: 0 });
+
+        // Helper to format a local date as YYYY-MM-DD (avoids timezone shifts from toISOString)
+        const formatLocalDateKey = (d) => {
+            const y = d.getFullYear();
+            const m = (d.getMonth() + 1).toString().padStart(2, '0');
+            const day = d.getDate().toString().padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+
+        // Build a set of unique YYYY-MM-DD (local) dates where tasks were completed
+        const dateSet = new Set(
+            completedTasks
+                .map(t => new Date(t.completedAt))
+                .map(d => formatLocalDateKey(new Date(d.getFullYear(), d.getMonth(), d.getDate())))
+        );
+
+        // Count consecutive days going backwards from today
+        let streak = 0;
+        let cursor = new Date();
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
+
+        while (true) {
+            const key = formatLocalDateKey(cursor);
+            if (dateSet.has(key)) {
+                streak += 1;
+                // Move to previous day
+                cursor.setDate(cursor.getDate() - 1);
+            } else {
+                break;
+            }
+        }
+
+        res.status(200).json({ currentStreak: streak });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+});
 
 module.exports = router;

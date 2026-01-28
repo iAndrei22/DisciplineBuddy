@@ -7,5 +7,21 @@ const userSchema = new mongoose.Schema({
     role: { type: String, enum: ['user', 'coach', 'admin'], default: 'user' },
     enrolledChallenges: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Challenge' }],
 });
+    role: { type: String, default: 'User' },
+    badges: { type: [String], default: [] },
+    score: { type: Number, default: 0 },
+    
+    // Level system
+    xp: { type: Number, default: 0 },
+    level: { type: Number, default: 1 },
+    
+    // Login tracking
+    lastLogin: { type: Date, default: null },
+    loginStreak: { type: Number, default: 0 },
+    totalLogins: { type: Number, default: 0 },
+    
+    // Activity tracking
+    lastActivity: { type: Date, default: Date.now }
+}, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

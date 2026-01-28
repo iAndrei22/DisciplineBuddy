@@ -1,5 +1,23 @@
 const { useState, useEffect } = React;
 
+const predefinedTasks = [
+    { title: "Read a book chapter", description: "Finish reading 1 chapter from your current book", points: 15, icon: "📚" },
+    { title: "Go for a 30-min run", description: "Complete a 30-minute running session", points: 20, icon: "🏃" },
+    { title: "Meditate", description: "Meditate for 10-15 minutes", points: 10, icon: "🧘" },
+    { title: "Drink 8 glasses of water", description: "Stay hydrated throughout the day", points: 10, icon: "💧" },
+    { title: "Complete a workout", description: "Do 30 minutes of exercise at the gym", points: 25, icon: "💪" },
+    { title: "Learn something new", description: "Spend 30 minutes learning a new skill", points: 20, icon: "🎓" },
+    { title: "Write in journal", description: "Spend 10 minutes journaling your thoughts", points: 12, icon: "📝" },
+    { title: "Meal prep", description: "Prepare healthy meals for tomorrow", points: 18, icon: "🍽️" },
+    { title: "Do 50 push-ups", description: "Complete 50 push-ups", points: 15, icon: "💯" },
+    { title: "Clean your space", description: "Tidy up your room or workspace", points: 12, icon: "🧹" },
+    { title: "Sleep 8 hours", description: "Get a full 8 hours of sleep", points: 15, icon: "😴" },
+    { title: "Walk 10,000 steps", description: "Achieve 10,000 steps for the day", points: 18, icon: "🚶" },
+    { title: "Study for exam", description: "Study for 1 hour", points: 25, icon: "📖" },
+    { title: "Call a friend", description: "Catch up with a friend or family member", points: 8, icon: "📞" },
+    { title: "Eat healthy meal", description: "Prepare and eat a balanced meal", points: 10, icon: "🥗" }
+];
+
 const TasksPage = () => {
     const user = JSON.parse(localStorage.getItem("user"));
     const [tasks, setTasks] = useState([]);
@@ -7,6 +25,7 @@ const TasksPage = () => {
     const [editId, setEditId] = useState(null);
     const [editForm, setEditForm] = useState({ title: "", description: "", points: 10 });
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+    const [showPredefined, setShowPredefined] = useState(false);
 
     if (!user) {
         window.location.hash = "#/login";
@@ -26,6 +45,12 @@ const TasksPage = () => {
         await apiPost("/tasks", { userId: user._id, ...taskForm });
         setTaskForm({ title: "", description: "", points: 10 });
         loadTasks();
+    };
+
+    const addPredefinedTask = async (predefinedTask) => {
+        await apiPost("/tasks", { userId: user._id, ...predefinedTask });
+        loadTasks();
+        setShowPredefined(false);
     };
 
     const toggleTask = async (task) => {
@@ -64,11 +89,42 @@ const TasksPage = () => {
                 <h1 className="text-2xl font-bold text-gray-900">My Tasks</h1>
             </div>
 
-            {/* Add Task Card */}
+            {/* Toggle Predefined Tasks */}
+            <div className="mb-6">
+                <button
+                    onClick={() => setShowPredefined(!showPredefined)}
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl font-bold hover:from-green-600 hover:to-emerald-700 transition-all shadow-md flex items-center justify-center gap-2"
+                >
+                    <i className="ph-bold ph-lightning-charge"></i>
+                    {showPredefined ? "Hide Predefined Tasks" : "Choose from Predefined Tasks"}
+                </button>
+            </div>
+
+            {/* Predefined Tasks Grid */}
+            {showPredefined && (
+                <div className="mb-8 p-4 bg-green-50 rounded-2xl border-2 border-green-200">
+                    <h3 className="font-bold text-green-800 mb-4 text-lg">🎯 Quick Task Templates</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        {predefinedTasks.map((task, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => addPredefinedTask(task)}
+                                className="p-3 bg-white rounded-lg border-2 border-green-200 hover:border-green-400 hover:shadow-md transition-all text-left"
+                            >
+                                <div className="text-2xl mb-1">{task.icon}</div>
+                                <div className="font-semibold text-sm text-gray-800">{task.title}</div>
+                                <div className="text-xs text-gray-500 mt-1">{task.points}⭐</div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Add Custom Task Card */}
             <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100 mb-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-16 h-16 bg-brand-50 rounded-bl-full -mr-8 -mt-8 z-0 transition-transform group-hover:scale-110"></div>
                 
-                <h2 className="text-sm font-bold text-brand-600 uppercase tracking-wider mb-4 relative z-10">New Challenge</h2>
+                <h2 className="text-sm font-bold text-brand-600 uppercase tracking-wider mb-4 relative z-10">Create Your Own Task</h2>
 
                 <input
                     className="w-full text-lg font-semibold placeholder-gray-300 border-b border-gray-100 py-2 focus:border-brand-500 outline-none transition-colors mb-4 bg-transparent relative z-10"
@@ -162,7 +218,7 @@ const TasksPage = () => {
                             <div className="flex flex-col gap-1 ml-2 relative">
                                 <button onClick={() => startEdit(task)} className="text-xs text-blue-500">Edit</button>
                                 {confirmDeleteId === task._id ? (
-                                    <div className="bg-white border border-gray-200 rounded shadow-sm p-2 mt-1 flex flex-col items-center animate-fade-in text-xs z-10 absolute right-0 top-8 min-w-[180px]">
+                                    <div className="bg-white border border-gray-200 rounded shadow-sm p-2 flex flex-col items-center animate-fade-in text-xs z-30 absolute top-0 right-[-220px] min-w-[200px] shadow-lg">
                                         <span className="mb-2 text-gray-700">Are you sure you want to delete this task?</span>
                                         <div className="flex gap-2">
                                             <button onClick={() => deleteTask(task._id)} className="text-red-600 font-bold">Yes</button>

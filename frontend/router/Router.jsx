@@ -13,6 +13,8 @@ const loadPage = async (path) => {
             return window.CoachDashboard;
         case "#/challenges":
             return window.BrowseChallenges;
+        case "#/profile":
+            return window.ProfilePage;
         default:
             return window.LoginPage;
     }

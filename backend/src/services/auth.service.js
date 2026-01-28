@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const User = require('../models/user.model');
+const levelService = require('./level.service');
 const saltRounds = 10;
 
 const register = async (username, email, password, role) => {
@@ -30,8 +31,15 @@ const login = async (email, password) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) throw new Error("Invalid credentials.");
 
+    // Update login tracking
+    await levelService.updateLoginTracking(user._id);
+    
+    // Update level after login
+    await levelService.updateUserLevel(user._id);
+
     // Return user without password
-    const userObj = user.toObject();
+    const updatedUser = await User.findById(user._id);
+    const userObj = updatedUser.toObject();
     delete userObj.password;
     
     // Convert ObjectIds to strings for frontend

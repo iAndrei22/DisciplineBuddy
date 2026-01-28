@@ -102,10 +102,7 @@ const HomePage = () => {
                         My Challenges
                         <i className="ph-bold ph-target"></i>
                     </a>
-                <a href="#/tasks" className="inline-flex items-center gap-2 bg-white text-brand-600 px-6 py-3 rounded-xl font-bold hover:bg-brand-50 transition-colors shadow-lg">
-                    Go to My Tasks
-                    <i className="ph-bold ph-arrow-right"></i>
-                </a>
+                </div>
 
                 {/* Progress Bar */}
                 <div className="mt-6">
@@ -120,7 +117,6 @@ const HomePage = () => {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-2 gap-4 mb-8">
             <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                     <div className="flex items-center gap-2 text-gray-500 mb-1 text-sm font-medium">

@@ -6,8 +6,6 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     role: { type: String, enum: ['user', 'coach', 'admin'], default: 'user' },
     enrolledChallenges: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Challenge' }],
-});
-    role: { type: String, default: 'User' },
     badges: { type: [String], default: [] },
     score: { type: Number, default: 0 },
     

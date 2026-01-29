@@ -3,7 +3,9 @@ const Task = require('../models/task.model');
 
 // Calculate XP required for a specific level
 const xpForLevel = (level) => {
-    return Math.floor(100 * Math.pow(level, 1.5));
+    // Modified to start Level 1 at 0 XP instead of 100 XP
+    if (level <= 1) return 0;
+    return Math.floor(100 * Math.pow(level - 1, 1.5));
 };
 
 // Get level from total XP
@@ -151,44 +153,51 @@ const updateLoginTracking = async (userId) => {
     const lastLogin = user.lastLogin ? new Date(user.lastLogin) : null;
     
     let loginStreak = user.loginStreak || 0;
-    let shouldUpdateStreak = true;
+    let shouldUpdateStats = true;
     
     if (lastLogin) {
-        // Calculate days between logins
-        const daysSinceLastLogin = Math.floor((now - lastLogin) / (1000 * 60 * 60 * 24));
+        // Check if same calendar day (UTC)
+        // This prevents XP abuse by logging in multiple times a day
+        const isSameDay = now.toISOString().slice(0,10) === lastLogin.toISOString().slice(0,10);
         
-        if (daysSinceLastLogin === 0) {
-            // Same day login - don't update streak, but still increment totalLogins
-            shouldUpdateStreak = false;
-        } else if (daysSinceLastLogin === 1) {
-            // Consecutive day - increase streak
-            loginStreak += 1;
+        if (isSameDay) {
+            shouldUpdateStats = false;
         } else {
-            // Streak broken - reset to 1
-            loginStreak = 1;
+            // Check for consecutive day
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            // Check if last login was yesterday
+            const isConsecutive = lastLogin.toISOString().slice(0,10) === yesterday.toISOString().slice(0,10);
+            
+            if (isConsecutive) {
+                loginStreak += 1;
+            } else {
+                loginStreak = 1; // Streak broken
+            }
         }
     } else {
         // First login ever
         loginStreak = 1;
     }
     
-    const newTotalLogins = (user.totalLogins || 0) + 1;
-    
     const updateData = {
-        totalLogins: newTotalLogins,
         lastLogin: now
     };
     
-    if (shouldUpdateStreak) {
+    if (shouldUpdateStats) {
+        updateData.totalLogins = (user.totalLogins || 0) + 1;
         updateData.loginStreak = loginStreak;
     }
     
     await User.findByIdAndUpdate(userId, updateData);
     
-    // Fetch updated user to confirm totalLogins was incremented
-    const updatedUser = await User.findById(userId);
-    
-    return { loginStreak: updatedUser.loginStreak, totalLogins: updatedUser.totalLogins };
+    // Fetch updated user to return correct stats or return calculated ones
+    // Returning calculated ones to save a query
+    return { 
+        loginStreak: shouldUpdateStats ? loginStreak : user.loginStreak, 
+        totalLogins: shouldUpdateStats ? ((user.totalLogins || 0) + 1) : (user.totalLogins || 0) 
+    };
 };
 
 module.exports = {

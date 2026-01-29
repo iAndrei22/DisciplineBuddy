@@ -41,6 +41,20 @@ async function checkAndAssignBadges(userId) {
     }
 }
 
+// Helper: Recalculate user score from scratch to ensure consistency
+const recalculateUserScore = async (userId) => {
+    try {
+        const tasks = await Task.find({ userId, isCompleted: true });
+        const realScore = tasks.reduce((sum, t) => sum + (t.points || 0), 0);
+        
+        await User.findByIdAndUpdate(userId, { score: realScore });
+        // Update user level and XP based on the new correct score
+        await levelService.updateUserLevel(userId);
+    } catch (error) {
+        console.error("Error recalculating score:", error);
+    }
+};
+
 // Service to handle Task logic
 
 // 1. Create a new task
@@ -59,7 +73,8 @@ const createTask = async (userId, title, description, points) => {
         points: points || 10,
         isCompleted: false
     });
-
+    
+    // No need to recalculate score on create (incomplete by default)
     return task;
 };
 
@@ -79,7 +94,14 @@ const deleteTask = async (taskId) => {
     if (!taskId) {
         throw new Error("Task ID is required.");
     }
-    return await Task.findByIdAndDelete(taskId);
+    const deletedTask = await Task.findByIdAndDelete(taskId);
+    
+    if (deletedTask) {
+        // If we deleted a task, score might change (if it was completed)
+        await recalculateUserScore(deletedTask.userId);
+    }
+    
+    return deletedTask;
 };
 
 // 4. Update task status (Completed/Not Completed)
@@ -89,7 +111,7 @@ const toggleTaskCompletion = async (taskId, isCompleted) => {
         throw new Error("Task ID is required.");
     }
     
-    // Find current task to determine score delta
+    // Find current task
     const current = await Task.findById(taskId);
     if (!current) throw new Error("Task not found.");
 
@@ -106,30 +128,16 @@ const toggleTaskCompletion = async (taskId, isCompleted) => {
         { new: true }
     );
 
-    // Gamification: adjust user score based on completion change
-    try {
-        let delta = 0;
-        if (!current.isCompleted && isCompleted) {
-            // Marked as done -> add points
-            delta = current.points || 10;
-        } else if (current.isCompleted && !isCompleted) {
-            // Marked as undone -> remove points
-            delta = -(current.points || 10);
+    // Gamification: ALWAYS recalculate from scratch to be safe
+    if (updated) {
+        await recalculateUserScore(updated.userId);
+        
+        // If completed, check for badges
+        if (isCompleted) {
+            await checkAndAssignBadges(updated.userId);
         }
-        if (delta !== 0) {
-            await User.findByIdAndUpdate(current.userId, { $inc: { score: delta } });
-            // Update user level and XP after score change
-            await levelService.updateUserLevel(current.userId);
-        }
-    } catch (e) {
-        // Log but don't fail the toggle operation
-        console.error('Score update error:', e.message);
     }
 
-    // If completed, check for badges
-    if (updated && isCompleted) {
-        await checkAndAssignBadges(updated.userId);
-    }
     return updated;
 };
 
@@ -137,7 +145,14 @@ const toggleTaskCompletion = async (taskId, isCompleted) => {
 // 5. Edit task (update any field)
 const editTask = async (taskId, updateFields) => {
     if (!taskId) throw new Error("Task ID is required.");
-    return await Task.findByIdAndUpdate(taskId, updateFields, { new: true });
+    const updated = await Task.findByIdAndUpdate(taskId, updateFields, { new: true });
+    
+    if (updated) {
+        // Points might have changed, recalculate
+        await recalculateUserScore(updated.userId);
+    }
+    
+    return updated;
 };
 
 

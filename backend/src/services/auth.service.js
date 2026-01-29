@@ -3,14 +3,15 @@ const User = require('../models/user.model');
 const levelService = require('./level.service');
 const saltRounds = 10;
 
-const register = async (username, email, password) => {
+const register = async (username, email, password, role) => {
     try {
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
         const user = await User.create({
             username,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            role: role 
         });
 
         return user._id;
@@ -41,7 +42,14 @@ const login = async (email, password) => {
     const userObj = updatedUser.toObject();
     delete userObj.password;
     
-    return userObj;
+    // Convert ObjectIds to strings for frontend
+    if (userObj.enrolledChallenges && Array.isArray(userObj.enrolledChallenges)) {
+        userObj.enrolledChallenges = userObj.enrolledChallenges.map(c => c.toString());
+    }
+    
+    console.log("Login user enrolledChallenges:", userObj.enrolledChallenges);
+    
+    return userObj; 
 };
 
 module.exports = { register, login };

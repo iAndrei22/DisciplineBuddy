@@ -44,8 +44,15 @@ const HomePage = () => {
 
     useEffect(() => { if (user) loadStats(); }, []);
 
+
     if (!user) {
         window.location.hash = "#/login";
+        return null;
+    }
+
+    // Redirect coaches to their dashboard
+    if (user.role === "coach") {
+        window.location.hash = "#/coach";
         return null;
     }
 
@@ -86,10 +93,16 @@ const HomePage = () => {
                 <h2 className="text-3xl font-bold mb-2">Focus Mode</h2>
                 <p className="text-brand-100 mb-6 max-w-xs">Stay consistent and track your daily progress to earn points.</p>
                 
-                <a href="#/tasks" className="inline-flex items-center gap-2 bg-white text-brand-600 px-6 py-3 rounded-xl font-bold hover:bg-brand-50 transition-colors shadow-lg">
-                    Go to My Tasks
-                    <i className="ph-bold ph-arrow-right"></i>
-                </a>
+                <div className="flex gap-3">
+                    <a href="#/tasks" className="inline-flex items-center gap-2 bg-white text-brand-600 px-6 py-3 rounded-xl font-bold hover:bg-brand-50 transition-colors shadow-lg">
+                        Go to My Tasks
+                        <i className="ph-bold ph-arrow-right"></i>
+                    </a>
+                    <a href="#/challenges" onClick={(e) => { localStorage.setItem("showEnrolled", "true"); }} className="inline-flex items-center gap-2 bg-white text-brand-600 px-6 py-3 rounded-xl font-bold hover:bg-brand-50 transition-colors shadow-lg">
+                        My Challenges
+                        <i className="ph-bold ph-target"></i>
+                    </a>
+                </div>
 
                 {/* Progress Bar */}
                 <div className="mt-6">
@@ -125,6 +138,10 @@ const HomePage = () => {
                 </div>
             </div>
 
+            {/* Explore Challenges Button */}
+            <a href="#/challenges" className="block w-full bg-gradient-to-r from-indigo-500 to-brand-600 text-white p-4 rounded-2xl text-center font-bold hover:shadow-lg transition-shadow">
+                <i className="ph-bold ph-rocket mr-2"></i> Explore Challenges
+            </a>
             {/* Level Progress Card */}
             {levelData && (
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">

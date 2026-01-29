@@ -3,6 +3,7 @@ const cors = require("cors");
 const connectDB = require("./config.js/db.js");
 const authService = require("./services/auth.service");
 const taskController = require("./controllers/task.controller");
+const challengeRoutes = require("./routes/challenge.routes");
 const userController = require("./controllers/user.controller");
 require("dotenv").config();
 
@@ -32,13 +33,17 @@ app.get("/api/badges", (req, res) => {
 
 app.post("/api/register", async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        const { username, email, password, role } = req.body;
+        
         if (!username || !email || !password) {
             return res.status(400).json({ message: "Missing fields" });
         }
 
-        const userId = await authService.register(username, email, password);
-        res.status(201).json({ message: "User registered", userId });
+        const userId = await authService.register(username, email, password, role);
+
+        
+         res.status(201).json({ message: "User registered", userId });
+
     } catch (err) {
         const status = err.message.includes("in use") ? 409 : 500;
         res.status(status).json({ message: err.message });
@@ -73,19 +78,7 @@ app.get("/api/users/:userId", async (req, res) => {
     }
 });
 
-// Get user by ID (to refresh user data including badges)
-app.get("/api/users/:userId", async (req, res) => {
-    try {
-        const User = require("./models/user.model");
-        const user = await User.findById(req.params.userId);
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-        res.status(200).json(user);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+app.use("/api/challenges", challengeRoutes);
 
 app.use("/api/tasks", taskController);
 app.use("/api/users", userController);

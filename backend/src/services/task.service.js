@@ -33,6 +33,8 @@ async function checkAndAssignBadges(userId) {
         if (badge.type === 'points' && totalPoints >= badge.milestone) earned.push(badge.id);
         if (badge.type === 'tasks_completed' && completedTasks.length >= badge.milestone) earned.push(badge.id);
         if (badge.type === 'early_task' && hasEarlyBird) earned.push(badge.id);
+        if (badge.type === 'level' && (user.level || 1) >= badge.milestone) earned.push(badge.id);
+        if (badge.type === 'challenges_completed' && (user.completedChallenges || 0) >= badge.milestone) earned.push(badge.id);
     });
 
     if (earned.length > 0) {
@@ -162,5 +164,6 @@ module.exports = {
     getUserTasks,
     deleteTask,
     toggleTaskCompletion,
-    editTask
+    editTask,
+    checkAndAssignBadges
 };

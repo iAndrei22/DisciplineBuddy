@@ -150,6 +150,8 @@ const calculateUserLevel = async (userId) => {
 
 // Update user's XP and level in database
 const updateUserLevel = async (userId) => {
+    const userBefore = await User.findById(userId).select('level');
+    const previousLevel = userBefore ? (userBefore.level || 1) : 1;
     const levelData = await calculateUserLevel(userId);
     
     await User.findByIdAndUpdate(userId, {
@@ -157,6 +159,11 @@ const updateUserLevel = async (userId) => {
         level: levelData.level,
         lastActivity: new Date()
     });
+
+    if (levelData.level !== previousLevel) {
+        const { checkAndAssignBadges } = require('./task.service');
+        await checkAndAssignBadges(userId);
+    }
     
     return levelData;
 };

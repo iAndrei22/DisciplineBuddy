@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
     enrolledChallenges: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Challenge' }],
     badges: { type: [String], default: [] },
     score: { type: Number, default: 0 },
+    completedChallenges: { type: Number, default: 0 },
     
     // Level system
     xp: { type: Number, default: 0 },

@@ -1,6 +1,7 @@
 const Challenge = require("../models/challenge.model");
 const User = require("../models/user.model");
 const Enrollment = require("../models/enrollment.model");
+const { checkAndAssignBadges } = require("../services/task.service");
 const levelService = require("../services/level.service");
 
 // Get available categories
@@ -58,6 +59,26 @@ exports.listChallenges = async (req, res) => {
         }
         
         console.log("Final challenges:", JSON.stringify(challenges, null, 2));
+        res.json(challenges);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+exports.listChallenges = async (req, res) => {
+    try {
+        const challenges = await Challenge.find().sort({ createdAt: -1 }).lean();
+        for (let i = 0; i < challenges.length; i++) {
+            const createdById = challenges[i].createdBy;
+            if (createdById) {
+                try {
+                    const coach = await User.findOne({ _id: createdById });
+                    if (coach) {
+                        challenges[i].coachUsername = coach.username;
+                        challenges[i].coachEmail = coach.email;
+                    }
+                } catch(e) {}
+            }
+        }
         res.json(challenges);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -163,6 +184,8 @@ exports.updateParticipantStatus = async (req, res) => {
             return res.status(404).json({ message: "User not enrolled in this challenge" });
         }
 
+        const previousStatus = participant.status;
+
         // Update status
         participant.status = status;
         if (status === 'completed') {
@@ -172,6 +195,16 @@ exports.updateParticipantStatus = async (req, res) => {
         }
 
         await challenge.save();
+
+        if (previousStatus !== 'completed' && status === 'completed') {
+            await User.findByIdAndUpdate(userId, { $inc: { completedChallenges: 1 } });
+            await checkAndAssignBadges(userId);
+        } else if (previousStatus === 'completed' && status !== 'completed') {
+            const user = await User.findById(userId).select('completedChallenges');
+            const currentCount = user ? (user.completedChallenges || 0) : 0;
+            const nextCount = Math.max(0, currentCount - 1);
+            await User.findByIdAndUpdate(userId, { completedChallenges: nextCount });
+        }
 
         // Update user XP/Level
         try {

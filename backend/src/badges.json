@@ -33,5 +33,61 @@
     "type": "early_task",
     "milestone": 1,
     "description": "Complete a task before 8:00 AM."
+  },
+  {
+    "id": "level_5",
+    "label": "⭐ Level 5",
+    "type": "level",
+    "milestone": 5,
+    "description": "Reach level 5."
+  },
+  {
+    "id": "level_10",
+    "label": "🌟 Level 10",
+    "type": "level",
+    "milestone": 10,
+    "description": "Reach level 10."
+  },
+  {
+    "id": "level_20",
+    "label": "✨ Level 20",
+    "type": "level",
+    "milestone": 20,
+    "description": "Reach level 20."
+  },
+  {
+    "id": "level_50",
+    "label": "💫 Level 50",
+    "type": "level",
+    "milestone": 50,
+    "description": "Reach level 50."
+  },
+  {
+    "id": "challenges_5",
+    "label": "🏁 5 Challenges",
+    "type": "challenges_completed",
+    "milestone": 5,
+    "description": "Complete 5 challenges."
+  },
+  {
+    "id": "challenges_10",
+    "label": "🥈 10 Challenges",
+    "type": "challenges_completed",
+    "milestone": 10,
+    "description": "Complete 10 challenges."
+  },
+  {
+    "id": "challenges_20",
+    "label": "🥇 20 Challenges",
+    "type": "challenges_completed",
+    "milestone": 20,
+    "description": "Complete 20 challenges."
+  },
+  {
+    "id": "challenges_50",
+    "label": "🏆 50 Challenges",
+    "type": "challenges_completed",
+    "milestone": 50,
+    "description": "Complete 50 challenges."
   }
 ]

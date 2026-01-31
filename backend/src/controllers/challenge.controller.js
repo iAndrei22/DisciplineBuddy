@@ -1,6 +1,7 @@
 const Challenge = require("../models/challenge.model");
 const User = require("../models/user.model");
 const Enrollment = require("../models/enrollment.model");
+const levelService = require("../services/level.service");
 
 // Get available categories
 exports.getCategories = (req, res) => {
@@ -171,6 +172,13 @@ exports.updateParticipantStatus = async (req, res) => {
         }
 
         await challenge.save();
+
+        // Update user XP/Level
+        try {
+            await levelService.updateUserLevel(userId);
+        } catch (e) {
+            console.error("Failed to update user level after challenge completion:", e);
+        }
 
         // Return updated challenge with coach info
         const updatedChallenge = await Challenge.findById(id).lean();

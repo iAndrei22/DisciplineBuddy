@@ -1,5 +1,6 @@
 const User = require('../models/user.model');
 const Task = require('../models/task.model');
+const Challenge = require('../models/challenge.model');
 
 // Calculate XP required for a specific level
 const xpForLevel = (level) => {
@@ -70,6 +71,20 @@ const calculateLoginXP = async (userId) => {
     return loginXP;
 };
 
+// Calculate Challenge XP
+const calculateChallengeXP = async (userId) => {
+    const completedChallengesCount = await Challenge.countDocuments({
+        participants: {
+             $elemMatch: { 
+                 user: userId, 
+                 status: 'completed' 
+             }
+        }
+    });
+
+    return completedChallengesCount * 75;
+};
+
 // Calculate Decay XP (penalty for inactivity)
 const calculateDecayXP = (totalXP, lastActivity) => {
     if (!lastActivity) return 0;
@@ -106,11 +121,12 @@ const calculateUserLevel = async (userId) => {
     const taskXP = await calculateTaskXP(userId);
     const streakXP = await calculateStreakXP(userId);
     const loginXP = await calculateLoginXP(userId);
+    const challengeXP = await calculateChallengeXP(userId);
     
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
     
-    const totalBeforeDecay = taskXP + streakXP + loginXP;
+    const totalBeforeDecay = taskXP + streakXP + loginXP + challengeXP;
     const decayXP = calculateDecayXP(totalBeforeDecay, user.lastActivity);
     
     const totalXP = Math.max(0, totalBeforeDecay - decayXP);
@@ -125,6 +141,7 @@ const calculateUserLevel = async (userId) => {
             taskXP,
             streakXP,
             loginXP,
+            challengeXP,
             decayXP,
             totalBeforeDecay
         }
@@ -204,6 +221,7 @@ module.exports = {
     xpForLevel,
     getLevelFromXP,
     calculateTaskXP,
+    calculateChallengeXP,
     calculateStreakXP,
     calculateLoginXP,
     calculateDecayXP,

@@ -300,7 +300,7 @@ const HomePage = () => {
                     <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <i className="ph-fill ph-trophy text-yellow-500 text-2xl"></i> Leaderboard
                     </h3>
-                    <div className="space-y-2 max-h-52 overflow-y-auto pr-2">
+                    <div className="space-y-2 max-h-52 overflow-y-auto pr-2 mb-6">
                         {leaderboard.map((entry, idx) => (
                             <div 
                                 key={idx}
@@ -331,6 +331,27 @@ const HomePage = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Recent Badges */}
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-2xl border border-purple-200">
+                        <h3 className="text-sm font-bold text-purple-800 mb-3 flex items-center gap-2">
+                            <i className="ph-fill ph-medal text-lg"></i> Your Recent Badges
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                            {user.badges && user.badges.length > 0 ? (
+                                user.badges.slice(-3).reverse().map((badgeId, idx) => (
+                                    <div key={idx} className="bg-white px-3 py-2 rounded-lg border border-purple-100 text-xs font-semibold text-purple-900 shadow-sm">
+                                        {badgeId.replace(/_/g, ' ').toUpperCase()}
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-xs text-purple-600">No badges earned yet. Complete tasks to earn your first badge!</p>
+                            )}
+                        </div>
+                        <a href="#/profile" className="mt-3 text-xs text-purple-700 font-semibold hover:text-purple-900 flex items-center gap-1">
+                            View all badges <i className="ph-bold ph-arrow-right"></i>
+                        </a>
                     </div>
                 </div>
             )}

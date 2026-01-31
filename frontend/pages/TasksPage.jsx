@@ -93,7 +93,7 @@ const TasksPage = () => {
             <div className="mb-6">
                 <button
                     onClick={() => setShowPredefined(!showPredefined)}
-                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl font-bold hover:from-green-600 hover:to-emerald-700 transition-all shadow-md flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-brand-500 to-indigo-600 text-white py-3 rounded-xl font-bold hover:from-brand-600 hover:to-indigo-700 transition-all shadow-md flex items-center justify-center gap-2"
                 >
                     <i className="ph-bold ph-lightning-charge"></i>
                     {showPredefined ? "Hide Predefined Tasks" : "Choose from Predefined Tasks"}
@@ -102,14 +102,14 @@ const TasksPage = () => {
 
             {/* Predefined Tasks Grid */}
             {showPredefined && (
-                <div className="mb-8 p-4 bg-green-50 rounded-2xl border-2 border-green-200">
-                    <h3 className="font-bold text-green-800 mb-4 text-lg">🎯 Quick Task Templates</h3>
+                <div className="mb-8 p-4 bg-indigo-50 rounded-2xl border-2 border-indigo-200">
+                    <h3 className="font-bold text-indigo-800 mb-4 text-lg">🎯 Quick Task Templates</h3>
                     <div className="grid grid-cols-2 gap-3">
                         {predefinedTasks.map((task, idx) => (
                             <button
                                 key={idx}
                                 onClick={() => addPredefinedTask(task)}
-                                className="p-3 bg-white rounded-lg border-2 border-green-200 hover:border-green-400 hover:shadow-md transition-all text-left"
+                                className="p-3 bg-white rounded-lg border-2 border-indigo-200 hover:border-indigo-400 hover:shadow-md transition-all text-left"
                             >
                                 <div className="text-2xl mb-1">{task.icon}</div>
                                 <div className="font-semibold text-sm text-gray-800">{task.title}</div>

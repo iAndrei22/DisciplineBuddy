@@ -129,4 +129,28 @@ router.get("/check-decay/:userId", async (req, res) => {
     }
 });
 
+// Get top 5 users by XP (Leaderboard)
+router.get("/leaderboard/top5", async (req, res) => {
+    try {
+        const topUsers = await User.find()
+            .select('username xp level score')
+            .sort({ xp: -1 })
+            .limit(5)
+            .lean();
+        
+        const leaderboard = topUsers.map((user, index) => ({
+            rank: index + 1,
+            username: user.username,
+            xp: user.xp || 0,
+            level: user.level || 1,
+            score: user.score || 0
+        }));
+        
+        res.status(200).json(leaderboard);
+        
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+});
+
 module.exports = router;

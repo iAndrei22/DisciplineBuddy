@@ -102,8 +102,6 @@ const BrowseChallenges = () => {
             
             // Update challenges list with the updated challenge
             setChallenges(prev => prev.map(c => c._id === challengeId ? data : c));
-            
-            alert("Successfully enrolled in challenge!");
         } catch (err) {
             console.error("Enrollment error:", err);
             alert("Failed to enroll");

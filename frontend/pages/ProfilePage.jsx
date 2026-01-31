@@ -99,18 +99,79 @@ const ProfilePage = () => {
 
       {/* Badges Section */}
       <div className="mb-4">
-        <div className="font-bold text-gray-700 mb-2 text-lg flex items-center gap-2">
-          <i className="ph-fill ph-medal text-brand-600"></i> Badges earned
+        <div className="font-bold text-gray-700 mb-4 text-lg flex items-center gap-2">
+          <i className="ph-fill ph-medal text-brand-600"></i> Badges Earned
         </div>
-        <div className="flex flex-wrap gap-3">
-          {badges.length === 0 && <span className="text-gray-400">No badges yet.</span>}
-          {badges.map((badge) => (
-            <span key={badge.id} title={badge.description} className="flex items-center gap-2 bg-brand-50 text-brand-900 rounded-xl px-4 py-2 text-lg font-semibold shadow-soft">
-              <span style={{ fontSize: 24 }}>{badge.label}</span>
-              <span className="text-xs text-gray-500">{badge.description}</span>
-            </span>
-          ))}
-        </div>
+        
+        {badges.length === 0 ? (
+          <span className="text-gray-400">No badges yet.</span>
+        ) : (
+          <div className="space-y-6">
+            {/* Points Badges */}
+            {badges.some(b => b.type === 'points') && (
+              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-4 border border-yellow-200">
+                <h3 className="font-bold text-yellow-800 mb-3 flex items-center gap-2">
+                  <i className="ph-fill ph-star text-xl"></i> Points
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {badges.filter(b => b.type === 'points').map((badge) => (
+                    <span key={badge.id} title={badge.description} className="flex items-center gap-2 bg-white text-yellow-900 rounded-lg px-3 py-2 text-sm font-semibold shadow-sm border border-yellow-100 hover:shadow-md transition-all">
+                      <span style={{ fontSize: 18 }}>{badge.label}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tasks Badges */}
+            {badges.some(b => b.type === 'tasks_completed' || b.type === 'early_task') && (
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-4 border border-blue-200">
+                <h3 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
+                  <i className="ph-fill ph-check-circle text-xl"></i> Tasks
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {badges.filter(b => b.type === 'tasks_completed' || b.type === 'early_task').map((badge) => (
+                    <span key={badge.id} title={badge.description} className="flex items-center gap-2 bg-white text-blue-900 rounded-lg px-3 py-2 text-sm font-semibold shadow-sm border border-blue-100 hover:shadow-md transition-all">
+                      <span style={{ fontSize: 18 }}>{badge.label}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Level Badges */}
+            {badges.some(b => b.type === 'level') && (
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-200">
+                <h3 className="font-bold text-purple-800 mb-3 flex items-center gap-2">
+                  <i className="ph-fill ph-lightning text-xl"></i> Levels
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {badges.filter(b => b.type === 'level').map((badge) => (
+                    <span key={badge.id} title={badge.description} className="flex items-center gap-2 bg-white text-purple-900 rounded-lg px-3 py-2 text-sm font-semibold shadow-sm border border-purple-100 hover:shadow-md transition-all">
+                      <span style={{ fontSize: 18 }}>{badge.label}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Challenges Badges */}
+            {badges.some(b => b.type === 'challenges_completed') && (
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200">
+                <h3 className="font-bold text-green-800 mb-3 flex items-center gap-2">
+                  <i className="ph-fill ph-target text-xl"></i> Challenges
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {badges.filter(b => b.type === 'challenges_completed').map((badge) => (
+                    <span key={badge.id} title={badge.description} className="flex items-center gap-2 bg-white text-green-900 rounded-lg px-3 py-2 text-sm font-semibold shadow-sm border border-green-100 hover:shadow-md transition-all">
+                      <span style={{ fontSize: 18 }}>{badge.label}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

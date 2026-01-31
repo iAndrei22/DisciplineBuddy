@@ -24,6 +24,8 @@ const BrowseChallenges = () => {
     });
     const [selectedCategory, setSelectedCategory] = useState("All Categories");
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedCoach, setSelectedCoach] = useState("All Coaches");
+    const uniqueCoaches = [...new Set(challenges.map(c => c.coachUsername).filter(Boolean))];
 
     if (!user) {
         window.location.hash = "#/login";
@@ -63,13 +65,11 @@ const BrowseChallenges = () => {
     // Calculate time remaining or overdue
     const getTimeInfo = (challenge, participation) => {
         if (!participation || !participation.enrolledAt) return null;
-        
         const enrolledDate = new Date(participation.enrolledAt);
         const deadline = new Date(enrolledDate.getTime() + challenge.durationDays * 24 * 60 * 60 * 1000);
         const now = new Date();
         const diffMs = deadline - now;
         const diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
-        
         if (participation.status === 'completed') {
             const completedDate = new Date(participation.completedAt);
             const wasLate = completedDate > deadline;
@@ -79,7 +79,6 @@ const BrowseChallenges = () => {
             }
             return { type: 'completed-ontime', days: 0 };
         }
-        
         if (diffDays > 0) {
             return { type: 'remaining', days: diffDays };
         } else {
@@ -120,7 +119,6 @@ const BrowseChallenges = () => {
             const res = await fetch(`${API_URL}/challenges/${challengeId}/status`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: user._id, status: newStatus })
             });
             
             console.log("Response status:", res.status);
@@ -147,6 +145,9 @@ const BrowseChallenges = () => {
         
         // Filter by category
         if (selectedCategory !== "All Categories" && c.category !== selectedCategory) return false;
+        
+        // Filter by coach
+        if (selectedCoach !== "All Coaches" && c.coachUsername !== selectedCoach) return false;
         
         // Filter by search query (title or description)
         if (searchQuery.trim()) {
@@ -189,7 +190,7 @@ const BrowseChallenges = () => {
                 </button>
             </div>
 
-            {/* Search and Category Filter */}
+            {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 <div className="relative flex-1">
                     <i className="ph-bold ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -208,6 +209,16 @@ const BrowseChallenges = () => {
                 >
                     {CATEGORIES.map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                </select>
+                <select
+                    value={selectedCoach}
+                    onChange={e => setSelectedCoach(e.target.value)}
+                    className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-100 focus:border-brand-500 outline-none transition"
+                >
+                    <option value="All Coaches">All Coaches</option>
+                    {uniqueCoaches.map(coach => (
+                        <option key={coach} value={coach}>{coach}</option>
                     ))}
                 </select>
             </div>

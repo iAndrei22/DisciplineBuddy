@@ -2,7 +2,7 @@ const { useState } = React;
 
 const LoginPage = () => {
     const [isLogin, setIsLogin] = useState(true);
-    const [form, setForm] = useState({ username: "", password: "", email: "", role: "" });
+    const [form, setForm] = useState({ username: "", password: "", email: "", role: "user" });
     const [msg, setMsg] = useState("");
 
     const handleSubmit = async (e) => {

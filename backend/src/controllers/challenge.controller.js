@@ -62,6 +62,26 @@ exports.listChallenges = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+exports.listChallenges = async (req, res) => {
+    try {
+        const challenges = await Challenge.find().sort({ createdAt: -1 }).lean();
+        for (let i = 0; i < challenges.length; i++) {
+            const createdById = challenges[i].createdBy;
+            if (createdById) {
+                try {
+                    const coach = await User.findOne({ _id: createdById });
+                    if (coach) {
+                        challenges[i].coachUsername = coach.username;
+                        challenges[i].coachEmail = coach.email;
+                    }
+                } catch(e) {}
+            }
+        }
+        res.json(challenges);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
 
 // Get participants for a specific challenge
 exports.getParticipants = async (req, res) => {

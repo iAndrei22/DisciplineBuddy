@@ -119,6 +119,7 @@ const BrowseChallenges = () => {
             const res = await fetch(`${API_URL}/challenges/${challengeId}/status`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: user._id, status: newStatus })
             });
             
             console.log("Response status:", res.status);

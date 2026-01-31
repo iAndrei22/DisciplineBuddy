@@ -165,7 +165,7 @@ const HomePage = () => {
                     </div>
 
                     {/* XP Breakdown */}
-                    <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="grid grid-cols-4 gap-3 text-center">
                         <div className="bg-blue-50 p-3 rounded-xl">
                             <div className="text-xs text-blue-600 font-medium mb-1">Tasks</div>
                             <div className="text-sm font-bold text-blue-900">{levelData.breakdown.taskXP} XP</div>
@@ -177,6 +177,10 @@ const HomePage = () => {
                         <div className="bg-green-50 p-3 rounded-xl">
                             <div className="text-xs text-green-600 font-medium mb-1">Logins</div>
                             <div className="text-sm font-bold text-green-900">{levelData.breakdown.loginXP} XP</div>
+                        </div>
+                         <div className="bg-indigo-50 p-3 rounded-xl">
+                            <div className="text-xs text-indigo-600 font-medium mb-1">Challenges</div>
+                            <div className="text-sm font-bold text-indigo-900">{levelData.breakdown.challengeXP || 0} XP</div>
                         </div>
                     </div>
 

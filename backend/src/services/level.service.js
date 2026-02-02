@@ -1,6 +1,7 @@
 const User = require('../models/user.model');
 const Task = require('../models/task.model');
 const Challenge = require('../models/challenge.model');
+const mongoose = require('mongoose');
 
 // Calculate XP required for a specific level
 const xpForLevel = (level) => {
@@ -73,15 +74,19 @@ const calculateLoginXP = async (userId) => {
 
 // Calculate Challenge XP
 const calculateChallengeXP = async (userId) => {
+    // Ensure userId is converted to ObjectId for MongoDB query
+    const userObjectId = typeof userId === 'string' ? new mongoose.Types.ObjectId(userId) : userId;
+    
     const completedChallengesCount = await Challenge.countDocuments({
         participants: {
              $elemMatch: { 
-                 user: userId, 
+                 user: userObjectId, 
                  status: 'completed' 
              }
         }
     });
 
+    console.log(`Challenge XP calculation for user ${userId}: ${completedChallengesCount} completed challenges = ${completedChallengesCount * 75} XP`);
     return completedChallengesCount * 75;
 };
 
@@ -150,15 +155,23 @@ const calculateUserLevel = async (userId) => {
 
 // Update user's XP and level in database
 const updateUserLevel = async (userId) => {
-    const userBefore = await User.findById(userId).select('level');
+    console.log(`\n=== UPDATE USER LEVEL for ${userId} ===`);
+    const userBefore = await User.findById(userId).select('level xp');
     const previousLevel = userBefore ? (userBefore.level || 1) : 1;
+    const previousXP = userBefore ? (userBefore.xp || 0) : 0;
+    console.log(`Before: Level ${previousLevel}, XP ${previousXP}`);
+    
     const levelData = await calculateUserLevel(userId);
+    console.log(`Calculated: Level ${levelData.level}, XP ${levelData.xp}`);
+    console.log(`Breakdown:`, levelData.breakdown);
     
     await User.findByIdAndUpdate(userId, {
         xp: levelData.xp,
         level: levelData.level,
         lastActivity: new Date()
     });
+    
+    console.log(`After update: Level ${levelData.level}, XP ${levelData.xp}`);
 
     if (levelData.level !== previousLevel) {
         const { checkAndAssignBadges } = require('./task.service');

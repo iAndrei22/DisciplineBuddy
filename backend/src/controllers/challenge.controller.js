@@ -1,5 +1,6 @@
 const Challenge = require("../models/challenge.model");
 const User = require("../models/user.model");
+const Task = require("../models/task.model");
 const Enrollment = require("../models/enrollment.model");
 const { checkAndAssignBadges } = require("../services/task.service");
 const levelService = require("../services/level.service");
@@ -10,63 +11,72 @@ exports.getCategories = (req, res) => {
     res.json(CATEGORIES);
 };
 
-// Create a general challenge (coach)
+// Create a general challenge (coach) with tasks
 exports.createChallenge = async (req, res) => {
     try {
-        const { title, description, durationDays, category, createdBy } = req.body;
+        const { title, description, durationDays, category, createdBy, tasks } = req.body;
+        console.log("=== CREATE CHALLENGE ===");
+        console.log("Received tasks:", tasks);
         if (!title) return res.status(400).json({ message: "Title required" });
 
+        // Creează mai întâi challenge-ul
         const challenge = new Challenge({
             title,
             description: description || "",
             durationDays: durationDays || 7,
             category: category || 'Habits & Routines',
             createdBy: createdBy || null,
+            tasks: []
         });
 
         await challenge.save();
-        
-        // Populate createdBy before returning
+
+        // Creează task-urile template și leagă-le de challenge
+        let taskIds = [];
+        if (tasks && Array.isArray(tasks) && tasks.length > 0) {
+            console.log("Creating", tasks.length, "tasks for challenge", challenge._id);
+            for (const t of tasks) {
+                const newTask = new Task({
+                    title: t.title,
+                    description: t.description,
+                    points: t.points || 10,
+                    challengeId: challenge._id,
+                    userId: null, // Task template, nu aparține niciunui user
+                    isCompleted: false
+                });
+                await newTask.save();
+                console.log("Created task:", newTask._id, newTask.title);
+                taskIds.push(newTask._id);
+            }
+            // Actualizează challenge-ul cu task-urile create
+            challenge.tasks = taskIds;
+            await challenge.save();
+            console.log("Updated challenge with tasks:", challenge.tasks);
+        } else {
+            console.log("No tasks provided or empty tasks array");
+        }
+
+        // Populate și returnează
         await challenge.populate('createdBy', 'username');
+        await challenge.populate('tasks');
         
         res.status(201).json(challenge);
     } catch (err) {
+        console.error("Create challenge error:", err);
         res.status(500).json({ message: err.message });
     }
 };
 
-// List all general challenges
+// List all general challenges with tasks populated
 exports.listChallenges = async (req, res) => {
     try {
-        const challenges = await Challenge.find().sort({ createdAt: -1 }).lean();
+        const userId = req.query.userId;
+        const challenges = await Challenge.find()
+            .sort({ createdAt: -1 })
+            .populate('tasks')
+            .populate('participants.user', 'username email')
+            .lean();
         
-        for (let i = 0; i < challenges.length; i++) {
-            const createdById = challenges[i].createdBy;
-            console.log("Challenge:", challenges[i].title, "createdBy:", createdById);
-            
-            if (createdById) {
-                try {
-                    const coach = await User.findOne({ _id: createdById });
-                    console.log("Found coach:", coach ? coach.username : "NOT FOUND");
-                    if (coach) {
-                        challenges[i].coachUsername = coach.username;
-                        challenges[i].coachEmail = coach.email;
-                    }
-                } catch(e) {
-                    console.log("Error finding coach:", e.message);
-                }
-            }
-        }
-        
-        console.log("Final challenges:", JSON.stringify(challenges, null, 2));
-        res.json(challenges);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-exports.listChallenges = async (req, res) => {
-    try {
-        const challenges = await Challenge.find().sort({ createdAt: -1 }).lean();
         for (let i = 0; i < challenges.length; i++) {
             const createdById = challenges[i].createdBy;
             if (createdById) {
@@ -78,7 +88,31 @@ exports.listChallenges = async (req, res) => {
                     }
                 } catch(e) {}
             }
+
+            // Dacă userId e specificat, calculează userTasks și userStatus
+            if (userId) {
+                const userTasks = await Task.find({ 
+                    userId: userId, 
+                    challengeId: challenges[i]._id 
+                });
+                challenges[i].userTasks = userTasks;
+                
+                // Calculează status
+                if (userTasks.length === 0) {
+                    challenges[i].userStatus = 'new';
+                } else {
+                    const completedCount = userTasks.filter(t => t.isCompleted).length;
+                    if (completedCount === 0) {
+                        challenges[i].userStatus = 'new';
+                    } else if (completedCount === userTasks.length) {
+                        challenges[i].userStatus = 'completed';
+                    } else {
+                        challenges[i].userStatus = 'in-progress';
+                    }
+                }
+            }
         }
+        
         res.json(challenges);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -97,14 +131,14 @@ exports.getParticipants = async (req, res) => {
     }
 };
 
-// Enroll user in a challenge
+// Enroll user in a challenge - creează task-uri personale pentru user
 exports.enrollChallenge = async (req, res) => {
     try {
         const challengeId = req.params.id;
         const { userId } = req.body;
 
-        // Get challenge first
-        const challenge = await Challenge.findById(challengeId);
+        // Get challenge with tasks
+        const challenge = await Challenge.findById(challengeId).populate('tasks');
         if (!challenge) {
             return res.status(404).json({ message: "Challenge not found" });
         }
@@ -119,7 +153,7 @@ exports.enrollChallenge = async (req, res) => {
             return res.status(400).json({ message: "Already enrolled in this challenge" });
         }
 
-        // Add user to challenge participants with status
+        // Add user to challenge participants with status 'new' (nu a început niciun task)
         challenge.participants.push({
             user: userId,
             status: 'in-progress',
@@ -133,8 +167,28 @@ exports.enrollChallenge = async (req, res) => {
             $addToSet: { enrolledChallenges: challengeId }
         });
 
-        // Return updated challenge
-        const updatedChallenge = await Challenge.findById(challengeId).lean();
+        // Creează copii ale task-urilor template pentru acest user
+        let userTasks = [];
+        if (challenge.tasks && challenge.tasks.length > 0) {
+            for (const templateTask of challenge.tasks) {
+                const newTask = new Task({
+                    userId: userId,
+                    challengeId: challengeId,
+                    title: templateTask.title,
+                    description: templateTask.description,
+                    points: templateTask.points || 10,
+                    isCompleted: false
+                });
+                await newTask.save();
+                userTasks.push(newTask);
+            }
+        }
+
+        // Return updated challenge with tasks and userTasks
+        const updatedChallenge = await Challenge.findById(challengeId)
+            .populate('tasks')
+            .populate('participants.user', 'username email')
+            .lean();
         
         // Add coach info
         if (updatedChallenge.createdBy) {
@@ -143,6 +197,9 @@ exports.enrollChallenge = async (req, res) => {
                 updatedChallenge.coachUsername = coach.username;
             }
         }
+        
+        updatedChallenge.userTasks = userTasks;
+        updatedChallenge.userStatus = 'new';
 
         res.json(updatedChallenge);
     } catch (err) {

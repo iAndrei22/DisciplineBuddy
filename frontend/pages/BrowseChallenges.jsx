@@ -34,7 +34,7 @@ const BrowseChallenges = () => {
 
     const loadChallenges = async () => {
         try {
-            const res = await fetch(`${API_URL}/challenges`);
+            const res = await fetch(`${API_URL}/challenges?userId=${user._id}`);
             const data = await res.json();
             setChallenges(data);
         } catch (err) {
@@ -100,8 +100,9 @@ const BrowseChallenges = () => {
                 return alert("Error: " + data.message);
             }
             
-            // Update challenges list with the updated challenge
-            setChallenges(prev => prev.map(c => c._id === challengeId ? data : c));
+            // Reîncarcă lista pentru a avea userTasks și userStatus actualizate
+            await loadChallenges();
+            alert("Successfully enrolled! Your tasks are ready.");
         } catch (err) {
             console.error("Enrollment error:", err);
             alert("Failed to enroll");
@@ -261,57 +262,124 @@ const BrowseChallenges = () => {
                                     </div>
                                 </div>
 
-                                {/* Time info and status for enrolled users */}
-                                {isEnrolled && timeInfo && (
+                                {/* Challenge Tasks List */}
+                                {challenge.tasks && challenge.tasks.length > 0 && (
                                     <div className="mb-4 p-3 rounded-lg bg-gray-50 border border-gray-100">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-bold text-gray-700">
+                                                <i className="ph-fill ph-list-checks mr-1"></i> Challenge Tasks ({challenge.tasks.length})
+                                            </span>
+                                            {/* Status badge bazat pe userStatus */}
+                                            {isEnrolled && challenge.userStatus && (
                                                 <span className={`px-2 py-1 rounded-md text-xs font-bold ${
-                                                    participation.status === 'completed' 
+                                                    challenge.userStatus === 'completed' 
                                                         ? 'bg-green-100 text-green-700'
-                                                        : 'bg-yellow-100 text-yellow-700'
+                                                        : challenge.userStatus === 'in-progress'
+                                                        ? 'bg-yellow-100 text-yellow-700'
+                                                        : 'bg-gray-100 text-gray-600'
                                                 }`}>
-                                                    {participation.status === 'completed' ? 'Completed' : 'In Progress'}
+                                                    {challenge.userStatus === 'completed' ? '✓ Completed' : 
+                                                     challenge.userStatus === 'in-progress' ? '⏳ In Progress' : 
+                                                     '🆕 New'}
                                                 </span>
-                                            </div>
-                                            <div className={`text-sm font-medium ${
-                                                timeInfo.type === 'remaining' ? 'text-blue-600' :
-                                                timeInfo.type === 'overdue' ? 'text-red-600' :
-                                                timeInfo.type === 'completed-late' ? 'text-orange-600' :
-                                                'text-green-600'
-                                            }`}>
-                                                {timeInfo.type === 'remaining' && (
-                                                    <><i className="ph-bold ph-clock mr-1"></i>{timeInfo.days} days remaining</>
-                                                )}
-                                                {timeInfo.type === 'overdue' && (
-                                                    <><i className="ph-bold ph-warning mr-1"></i>{timeInfo.days} days overdue!</>
-                                                )}
-                                                {timeInfo.type === 'completed-late' && (
-                                                    <><i className="ph-bold ph-check-circle mr-1"></i>Completed {timeInfo.days} days late</>
-                                                )}
-                                                {timeInfo.type === 'completed-ontime' && (
-                                                    <><i className="ph-bold ph-check-circle mr-1"></i>Completed on time!</>
-                                                )}
-                                            </div>
+                                            )}
                                         </div>
+                                        
+                                        {/* Afișează progress bar pentru enrolled users */}
+                                        {isEnrolled && challenge.userTasks && challenge.userTasks.length > 0 && (
+                                            <div className="mb-3">
+                                                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                                    <span>Progress</span>
+                                                    <span>{challenge.userTasks.filter(t => t.isCompleted).length}/{challenge.userTasks.length} completed</span>
+                                                </div>
+                                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                                    <div 
+                                                        className="bg-brand-600 h-2 rounded-full transition-all duration-300"
+                                                        style={{ 
+                                                            width: `${(challenge.userTasks.filter(t => t.isCompleted).length / challenge.userTasks.length) * 100}%` 
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {/* Lista de task-uri */}
+                                        <ul className="space-y-2">
+                                            {isEnrolled && challenge.userTasks && challenge.userTasks.length > 0 ? (
+                                                // Pentru enrolled users, afișează userTasks cu status
+                                                challenge.userTasks.map((task, idx) => (
+                                                    <li key={task._id || idx} className={`flex items-start gap-2 text-sm p-2 rounded ${task.isCompleted ? 'bg-green-50' : 'bg-white'}`}>
+                                                        <span className={`mt-0.5 ${task.isCompleted ? 'text-green-600' : 'text-gray-400'}`}>
+                                                            {task.isCompleted ? (
+                                                                <i className="ph-fill ph-check-circle"></i>
+                                                            ) : (
+                                                                <i className="ph-bold ph-circle"></i>
+                                                            )}
+                                                        </span>
+                                                        <div className="flex-1">
+                                                            <span className={task.isCompleted ? 'text-green-700 line-through' : 'text-gray-700'}>
+                                                                {task.title}
+                                                            </span>
+                                                            {task.description && (
+                                                                <p className="text-xs text-gray-500 mt-0.5">{task.description}</p>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-xs text-brand-600 font-medium">{task.points || 10} pts</span>
+                                                    </li>
+                                                ))
+                                            ) : (
+                                                // Pentru non-enrolled users, afișează template tasks
+                                                challenge.tasks.map((task, idx) => (
+                                                    <li key={task._id || idx} className="flex items-start gap-2 text-sm p-2 rounded bg-white">
+                                                        <span className="text-gray-400 mt-0.5">
+                                                            <i className="ph-bold ph-circle"></i>
+                                                        </span>
+                                                        <div className="flex-1">
+                                                            <span className="text-gray-700">{task.title}</span>
+                                                            {task.description && (
+                                                                <p className="text-xs text-gray-500 mt-0.5">{task.description}</p>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-xs text-brand-600 font-medium">{task.points || 10} pts</span>
+                                                    </li>
+                                                ))
+                                            )}
+                                        </ul>
+                                        
+                                        {/* Link to Tasks page for enrolled users */}
+                                        {isEnrolled && challenge.userTasks && challenge.userTasks.length > 0 && (
+                                            <a 
+                                                href="#/tasks" 
+                                                className="mt-3 block text-center text-sm text-brand-600 hover:text-brand-700 font-medium"
+                                            >
+                                                <i className="ph-bold ph-arrow-right mr-1"></i> Go to Tasks to complete them
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
 
-                                        {/* Status toggle buttons */}
-                                        {participation.status !== 'completed' && (
-                                            <button
-                                                onClick={() => updateStatus(challenge._id, 'completed')}
-                                                className="mt-3 w-full py-2 rounded-lg text-sm font-bold bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <i className="ph-bold ph-check"></i> Mark as Completed
-                                            </button>
-                                        )}
-                                        {participation.status === 'completed' && (
-                                            <button
-                                                onClick={() => updateStatus(challenge._id, 'in-progress')}
-                                                className="mt-3 w-full py-2 rounded-lg text-sm font-bold bg-yellow-500 text-white hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <i className="ph-bold ph-arrow-counter-clockwise"></i> Mark as In Progress
-                                            </button>
-                                        )}
+                                {/* Time info for enrolled users */}
+                                {isEnrolled && timeInfo && (
+                                    <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-100">
+                                        <div className={`text-sm font-medium ${
+                                            timeInfo.type === 'remaining' ? 'text-blue-600' :
+                                            timeInfo.type === 'overdue' ? 'text-red-600' :
+                                            timeInfo.type === 'completed-late' ? 'text-orange-600' :
+                                            'text-green-600'
+                                        }`}>
+                                            {timeInfo.type === 'remaining' && (
+                                                <><i className="ph-bold ph-clock mr-1"></i>{timeInfo.days} days remaining</>
+                                            )}
+                                            {timeInfo.type === 'overdue' && (
+                                                <><i className="ph-bold ph-warning mr-1"></i>{timeInfo.days} days overdue!</>
+                                            )}
+                                            {timeInfo.type === 'completed-late' && (
+                                                <><i className="ph-bold ph-check-circle mr-1"></i>Completed {timeInfo.days} days late</>
+                                            )}
+                                            {timeInfo.type === 'completed-ontime' && (
+                                                <><i className="ph-bold ph-check-circle mr-1"></i>Completed on time!</>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 

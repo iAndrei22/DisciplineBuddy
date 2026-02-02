@@ -159,9 +159,143 @@ const TasksPage = () => {
                 </button>
             </div>
 
-            {/* Task List */}
-            <div className="space-y-3">
-                {tasks.map(task => (
+            {/* Task List - Grouped by Challenge */}
+            <div className="space-y-6">
+                {/* Challenge Tasks - grupate */}
+                {(() => {
+                    const challengeTasks = tasks.filter(t => t.challengeId);
+                    const personalTasks = tasks.filter(t => !t.challengeId);
+                    
+                    // Grupează task-urile pe challengeId (folosind _id-ul)
+                    const challengeGroups = {};
+                    challengeTasks.forEach(task => {
+                        // challengeId poate fi obiect populat sau string
+                        const chalId = typeof task.challengeId === 'object' ? task.challengeId._id : task.challengeId;
+                        if (!challengeGroups[chalId]) {
+                            challengeGroups[chalId] = {
+                                challenge: typeof task.challengeId === 'object' ? task.challengeId : null,
+                                tasks: []
+                            };
+                        }
+                        challengeGroups[chalId].tasks.push(task);
+                    });
+                    
+                    return (
+                        <>
+                            {/* Challenge-grouped tasks */}
+                            {Object.keys(challengeGroups).length > 0 && (
+                                <div className="space-y-4">
+                                    <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider flex items-center gap-2">
+                                        <i className="ph-fill ph-flag-banner text-brand-500"></i>
+                                        Challenge Tasks
+                                    </h2>
+                                    {Object.entries(challengeGroups).map(([challengeId, group]) => {
+                                        const challengeTaskList = group.tasks;
+                                        const challenge = group.challenge;
+                                        const completedCount = challengeTaskList.filter(t => t.isCompleted).length;
+                                        const totalCount = challengeTaskList.length;
+                                        const progressPercent = (completedCount / totalCount) * 100;
+                                        
+                                        return (
+                                            <div key={challengeId} className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border border-purple-100 overflow-hidden">
+                                                {/* Challenge header cu info despre challenge */}
+                                                <div className="p-4 border-b border-purple-100">
+                                                    {/* Challenge info */}
+                                                    {challenge && (
+                                                        <div className="mb-3">
+                                                            <h3 className="font-bold text-purple-900 text-lg flex items-center gap-2">
+                                                                <i className="ph-fill ph-flag-banner"></i>
+                                                                {challenge.title}
+                                                            </h3>
+                                                            {challenge.description && (
+                                                                <p className="text-sm text-purple-700 mt-1">{challenge.description}</p>
+                                                            )}
+                                                            {challenge.createdBy && (
+                                                                <div className="flex items-center gap-1 mt-2 text-xs text-purple-600">
+                                                                    <i className="ph-fill ph-chalkboard-teacher"></i>
+                                                                    <span>Coach: <strong>{challenge.createdBy.username || 'Unknown'}</strong></span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <span className="font-medium text-purple-800 text-sm">Tasks Progress</span>
+                                                        <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                                            completedCount === totalCount 
+                                                                ? 'bg-green-100 text-green-700'
+                                                                : completedCount > 0
+                                                                ? 'bg-yellow-100 text-yellow-700'
+                                                                : 'bg-gray-100 text-gray-600'
+                                                        }`}>
+                                                            {completedCount === totalCount ? '✓ Completed' : 
+                                                             completedCount > 0 ? '⏳ In Progress' : '🆕 New'}
+                                                        </span>
+                                                    </div>
+                                                    {/* Progress bar */}
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex-1 bg-purple-200 rounded-full h-2">
+                                                            <div 
+                                                                className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                                                                style={{ width: `${progressPercent}%` }}
+                                                            ></div>
+                                                        </div>
+                                                        <span className="text-xs font-medium text-purple-700">{completedCount}/{totalCount}</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Tasks in this challenge */}
+                                                <div className="p-3 space-y-2">
+                                                    {challengeTaskList.map(task => (
+                                                        <div 
+                                                            key={task._id} 
+                                                            className={`p-3 bg-white rounded-xl border transition-all duration-200 flex items-start gap-3 ${
+                                                                task.isCompleted 
+                                                                ? "border-green-200 bg-green-50" 
+                                                                : "border-gray-100 hover:border-brand-200 hover:shadow-sm"
+                                                            }`}
+                                                        >
+                                                            <button 
+                                                                onClick={() => toggleTask(task)}
+                                                                className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                                                    task.isCompleted 
+                                                                    ? "bg-green-500 border-green-500 text-white" 
+                                                                    : "border-gray-300 text-transparent hover:border-brand-400"
+                                                                }`}
+                                                            >
+                                                                <i className="ph-bold ph-check text-xs"></i>
+                                                            </button>
+
+                                                            <div className="flex-1">
+                                                                <h3 className={`font-medium text-sm ${task.isCompleted ? "line-through text-gray-400" : "text-gray-800"}`}>
+                                                                    {task.title}
+                                                                </h3>
+                                                                {task.description && (
+                                                                    <p className="text-xs text-gray-500 mt-0.5">{task.description}</p>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="bg-brand-50 text-brand-700 text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1">
+                                                                <i className="ph-fill ph-star text-brand-400"></i>
+                                                                +{task.points}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            
+                            {/* Personal Tasks */}
+                            {personalTasks.length > 0 && (
+                                <div className="space-y-3">
+                                    <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider flex items-center gap-2">
+                                        <i className="ph-fill ph-user text-gray-500"></i>
+                                        Personal Tasks
+                                    </h2>
+                                    {personalTasks.map(task => (
                     <div 
                         key={task._id} 
                         className={`group p-4 bg-white rounded-xl border transition-all duration-200 flex items-start gap-4 ${
@@ -230,7 +364,12 @@ const TasksPage = () => {
                                 )}
                             </div>
                     </div>
-                ))}
+                                    ))}
+                                </div>
+                            )}
+                        </>
+                    );
+                })()}
             </div>
         </div>
     );

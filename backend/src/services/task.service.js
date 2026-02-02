@@ -1,6 +1,7 @@
 
 const Task = require('../models/task.model');
 const User = require('../models/user.model');
+const Challenge = require('../models/challenge.model');
 const levelService = require('./level.service');
 const path = require('path');
 const fs = require('fs');
@@ -87,7 +88,17 @@ const getUserTasks = async (userId) => {
     }
 
     // Find tasks by userId and sort by newest first
-    const tasks = await Task.find({ userId }).sort({ createdAt: -1 });
+    // Populate challengeId with challenge info (title, description, createdBy)
+    const tasks = await Task.find({ userId })
+        .sort({ createdAt: -1 })
+        .populate({
+            path: 'challengeId',
+            select: 'title description createdBy',
+            populate: {
+                path: 'createdBy',
+                select: 'username'
+            }
+        });
     return tasks;
 };
 
@@ -138,9 +149,101 @@ const toggleTaskCompletion = async (taskId, isCompleted) => {
         if (isCompleted) {
             await checkAndAssignBadges(updated.userId);
         }
+
+        // Check if this task belongs to a challenge and update challenge status
+        if (updated.challengeId && updated.userId) {
+            await checkAndUpdateChallengeStatus(updated.userId, updated.challengeId);
+        }
     }
 
     return updated;
+};
+
+// Helper: Check if all tasks of a challenge are completed and update challenge status
+const checkAndUpdateChallengeStatus = async (userId, challengeId) => {
+    try {
+        console.log(`\n=== CHECK CHALLENGE STATUS ===`);
+        console.log(`User: ${userId}, Challenge: ${challengeId}`);
+        
+        // Get all user tasks for this challenge
+        const userChallengeTasks = await Task.find({ 
+            userId: userId, 
+            challengeId: challengeId 
+        });
+
+        console.log(`Found ${userChallengeTasks.length} user tasks for this challenge`);
+        
+        if (userChallengeTasks.length === 0) {
+            console.log('No tasks found, returning');
+            return;
+        }
+
+        const allCompleted = userChallengeTasks.every(t => t.isCompleted);
+        const completedCount = userChallengeTasks.filter(t => t.isCompleted).length;
+        console.log(`Completed: ${completedCount}/${userChallengeTasks.length}, All completed: ${allCompleted}`);
+
+        // Get the challenge and find user's participation
+        const challenge = await Challenge.findById(challengeId);
+        if (!challenge) {
+            console.log('Challenge not found!');
+            return;
+        }
+
+        const participant = challenge.participants.find(p => {
+            const oderId = p.user._id ? p.user._id.toString() : p.user.toString();
+            return oderId === userId.toString();
+        });
+
+        if (!participant) {
+            console.log('Participant not found in challenge!');
+            console.log('Challenge participants:', challenge.participants.map(p => p.user.toString()));
+            return;
+        }
+
+        const previousStatus = participant.status;
+        let newStatus = 'in-progress';
+
+        if (allCompleted) {
+            newStatus = 'completed';
+        }
+
+        console.log(`Previous status: ${previousStatus}, New status: ${newStatus}`);
+
+        // Only update if status changed
+        if (previousStatus !== newStatus) {
+            console.log('Status changed! Updating...');
+            participant.status = newStatus;
+            
+            if (newStatus === 'completed') {
+                participant.completedAt = new Date();
+                // Award XP for completing challenge
+                await User.findByIdAndUpdate(userId, { $inc: { completedChallenges: 1 } });
+                console.log(`🎉 User ${userId} completed challenge ${challengeId}! Awarding XP...`);
+            } else if (previousStatus === 'completed' && newStatus !== 'completed') {
+                // User unchecked a task, remove completion
+                participant.completedAt = null;
+                const user = await User.findById(userId).select('completedChallenges');
+                const currentCount = user ? (user.completedChallenges || 0) : 0;
+                await User.findByIdAndUpdate(userId, { 
+                    completedChallenges: Math.max(0, currentCount - 1) 
+                });
+                console.log(`User ${userId} uncompleted challenge ${challengeId}`);
+            }
+
+            await challenge.save();
+            console.log('Challenge saved with new participant status');
+
+            // Update user level/XP
+            console.log('Calling levelService.updateUserLevel...');
+            await levelService.updateUserLevel(userId);
+            console.log('Level updated!');
+            
+            // Check for badges
+            await checkAndAssignBadges(userId);
+        }
+    } catch (error) {
+        console.error("Error checking challenge status:", error);
+    }
 };
 
 

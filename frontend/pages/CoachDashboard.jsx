@@ -19,6 +19,10 @@ const CoachDashboard = () => {
     const [form, setForm] = useState({ title: "", description: "", durationDays: 7, category: "Habits & Routines" });
     const [selectedChallenge, setSelectedChallenge] = useState(null);
     const [participants, setParticipants] = useState([]);
+    
+    // State pentru task-uri la creare challenge
+    const [challengeTasks, setChallengeTasks] = useState([]);
+    const [taskForm, setTaskForm] = useState({ title: "", description: "", points: 10 });
 
     const handleLogout = () => {
         localStorage.removeItem("user");
@@ -50,19 +54,39 @@ const CoachDashboard = () => {
 
     useEffect(() => { loadChallenges(); }, []);
 
+    // Adaugă task la lista de task-uri pentru challenge
+    const addTaskToChallenge = () => {
+        if (!taskForm.title.trim() || !taskForm.description.trim()) {
+            return alert("Task title and description are required");
+        }
+        setChallengeTasks(prev => [...prev, { ...taskForm }]);
+        setTaskForm({ title: "", description: "", points: 10 });
+    };
+
+    // Șterge task din lista de task-uri
+    const removeTaskFromChallenge = (index) => {
+        setChallengeTasks(prev => prev.filter((_, i) => i !== index));
+    };
+
     const createChallenge = async (e) => {
         e.preventDefault();
         if (!form.title.trim()) return alert("Title required");
+        if (challengeTasks.length === 0) return alert("Add at least one task to the challenge");
 
         try {
             const res = await fetch(`${API_URL}/challenges`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...form, createdBy: user._id })
+                body: JSON.stringify({ 
+                    ...form, 
+                    createdBy: user._id,
+                    tasks: challengeTasks 
+                })
             });
             const created = await res.json();
             setChallenges(prev => [created, ...prev]);
             setForm({ title: "", description: "", durationDays: 7, category: "Habits & Routines" });
+            setChallengeTasks([]);
         } catch (err) {
             alert("Failed to create challenge");
         }
@@ -192,6 +216,70 @@ const CoachDashboard = () => {
                         </select>
                     </div>
 
+                    {/* Task-uri pentru challenge */}
+                    <div className="border-t border-gray-100 pt-4 mt-4">
+                        <h3 className="text-sm font-bold text-gray-700 mb-3">Challenge Tasks</h3>
+                        
+                        {/* Formular adăugare task */}
+                        <div className="flex flex-col gap-2 mb-3">
+                            <input
+                                className="w-full text-sm bg-gray-50 rounded-lg px-3 py-2 outline-none border border-gray-100"
+                                placeholder="Task title"
+                                value={taskForm.title}
+                                onChange={e => setTaskForm({ ...taskForm, title: e.target.value })}
+                            />
+                            <div className="flex gap-2">
+                                <input
+                                    className="flex-1 text-sm bg-gray-50 rounded-lg px-3 py-2 outline-none border border-gray-100"
+                                    placeholder="Task description"
+                                    value={taskForm.description}
+                                    onChange={e => setTaskForm({ ...taskForm, description: e.target.value })}
+                                />
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="w-20 text-sm bg-gray-50 rounded-lg px-3 py-2 outline-none border border-gray-100"
+                                    placeholder="Points"
+                                    value={taskForm.points}
+                                    onChange={e => setTaskForm({ ...taskForm, points: Number(e.target.value) })}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={addTaskToChallenge}
+                                    className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-brand-700"
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Lista task-uri adăugate */}
+                        {challengeTasks.length > 0 && (
+                            <div className="space-y-2">
+                                {challengeTasks.map((task, idx) => (
+                                    <div key={idx} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        <div className="flex-1">
+                                            <span className="font-medium text-gray-900">{task.title}</span>
+                                            <span className="text-sm text-gray-500 ml-2">({task.points} pts)</span>
+                                            <p className="text-xs text-gray-500">{task.description}</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeTaskFromChallenge(idx)}
+                                            className="text-red-500 hover:text-red-700 text-sm font-bold"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        
+                        {challengeTasks.length === 0 && (
+                            <p className="text-sm text-gray-400 italic">No tasks added yet. Add at least one task.</p>
+                        )}
+                    </div>
+
                     <button 
                         type="submit"
                         className="w-full bg-gray-900 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-black transition-colors flex items-center justify-center gap-2"
@@ -231,7 +319,25 @@ const CoachDashboard = () => {
                                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
                                     <i className="ph-fill ph-users text-gray-400"></i>
                                     <span>{challenge.participants?.length || 0} participants</span>
+                                    <span className="mx-2">•</span>
+                                    <i className="ph-fill ph-list-checks text-gray-400"></i>
+                                    <span>{challenge.tasks?.length || 0} tasks</span>
                                 </div>
+
+                                {/* Task-urile challenge-ului */}
+                                {challenge.tasks && challenge.tasks.length > 0 && (
+                                    <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Challenge Tasks:</h4>
+                                        <ul className="space-y-1">
+                                            {challenge.tasks.map((task, idx) => (
+                                                <li key={task._id || idx} className="flex items-center justify-between text-sm">
+                                                    <span className="text-gray-800">{task.title}</span>
+                                                    <span className="text-brand-600 font-medium">{task.points} pts</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
 
                                 <div className="flex items-center gap-2 mb-3">
                                     <button

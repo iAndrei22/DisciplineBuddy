@@ -27,6 +27,7 @@ const ChallengeSchema = new mongoose.Schema({
     category: { type: String, enum: CATEGORIES, default: 'Habits & Routines' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     participants: [ParticipantSchema],
+    tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }], // Task-uri template ale challenge-ului
 }, { timestamps: true });
 
 module.exports = mongoose.model('Challenge', ChallengeSchema);

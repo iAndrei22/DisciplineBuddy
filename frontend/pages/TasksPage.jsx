@@ -371,6 +371,15 @@ const TasksPage = () => {
                     );
                 })()}
             </div>
+
+            <button
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700 transition-colors flex items-center justify-center"
+                aria-label="Scroll to top"
+                title="Back to top"
+            >
+                <i className="ph-bold ph-arrow-up"></i>
+            </button>
         </div>
     );
 };

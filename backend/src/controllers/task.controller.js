@@ -90,8 +90,8 @@ router.get("/progress/:userId", async (req, res) => {
         const total = await Task.countDocuments({ userId, createdAt: { $gte: start, $lt: end } });
         const completed = await Task.countDocuments({ 
             userId, 
-            isCompleted: true, 
-            completedAt: { $gte: start, $lt: end } 
+            createdAt: { $gte: start, $lt: end },
+            isCompleted: true
         });
 
         const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
